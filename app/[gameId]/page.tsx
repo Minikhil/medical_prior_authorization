@@ -35,6 +35,7 @@ export default function Page({ params }: { params: { gameId: string } }) {
   }, [router]);
 
   const [loading, setLoading] = useState(false);
+  const [categoriesVisible, setCategoriesVisible] = useState(true);
   //categories is an object that conatins 5 properties 
   const [categories, setCategories] = useState({
     category1: "",
@@ -463,51 +464,60 @@ export default function Page({ params }: { params: { gameId: string } }) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Input
-            type="text"
-            id="category1"
-            placeholder="Category 1"
-            value={categories.category1}
-            onChange={handleChange}
-            className="bg-zinc-800 border-zinc-700 text-white placeholder:text-gray-500"
-          />
-          <Input
-            type="text"
-            id="category2"
-            placeholder="Category 2"
-            value={categories.category2}
-            onChange={handleChange}
-            className="bg-zinc-800 border-zinc-700 text-white placeholder:text-gray-500"
-          />
-          <Input
-            type="text"
-            id="category3"
-            placeholder="Category 3"
-            value={categories.category3}
-            onChange={handleChange}
-            className="bg-zinc-800 border-zinc-700 text-white placeholder:text-gray-500"
-          />
-          <Input
-            type="text"
-            id="category4"
-            placeholder="Category 4"
-            value={categories.category4}
-            onChange={handleChange}
-            className="bg-zinc-800 border-zinc-700 text-white placeholder:text-gray-500"
-          />
-          <Input
-            type="text"
-            id="category5"
-            placeholder="Category 5"
-            value={categories.category5}
-            onChange={handleChange}
-            className="bg-zinc-800 border-zinc-700 text-white placeholder:text-gray-500"
-          />
+          {categoriesVisible && (
+            <>
+              <Input
+                type="text"
+                id="category1"
+                placeholder="Category 1"
+                value={categories.category1}
+                onChange={handleChange}
+                className="bg-zinc-800 border-zinc-700 text-white placeholder:text-gray-500"
+              />
+              <Input
+                type="text"
+                id="category2"
+                placeholder="Category 2"
+                value={categories.category2}
+                onChange={handleChange}
+                className="bg-zinc-800 border-zinc-700 text-white placeholder:text-gray-500"
+              />
+              <Input
+                type="text"
+                id="category3"
+                placeholder="Category 3"
+                value={categories.category3}
+                onChange={handleChange}
+                className="bg-zinc-800 border-zinc-700 text-white placeholder:text-gray-500"
+              />
+              <Input
+                type="text"
+                id="category4"
+                placeholder="Category 4"
+                value={categories.category4}
+                onChange={handleChange}
+                className="bg-zinc-800 border-zinc-700 text-white placeholder:text-gray-500"
+              />
+              <Input
+                type="text"
+                id="category5"
+                placeholder="Category 5"
+                value={categories.category5}
+                onChange={handleChange}
+                className="bg-zinc-800 border-zinc-700 text-white placeholder:text-gray-500"
+              />
+            </>
+          )}
           <Button 
-            onClick={handleGenerateWords}
+            onClick={() => {
+              if (categoriesVisible) {
+                handleGenerateWords();
+              }
+              setCategoriesVisible(!categoriesVisible);
+            }}
             className="bg-emerald-600 hover:bg-emerald-700 text-white"
           >
-            Start
+            {categoriesVisible ? 'Start' : 'New Categories'}
           </Button>
         </div>
 
