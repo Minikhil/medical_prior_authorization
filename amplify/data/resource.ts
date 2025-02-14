@@ -83,7 +83,7 @@ export const gameSessionsdata = defineData({
   authorizationModes: {
     defaultAuthorizationMode: "apiKey",
     apiKeyAuthorizationMode: {
-      expiresInDays: 3650, // API key expires after 10 years
+      expiresInDays: 365, // API key expires after 1 year
     },
   },
 });
