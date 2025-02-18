@@ -24,7 +24,7 @@ export default function Home() {
     e.preventDefault();
     // For now, just redirect to the customer page
     // In a real application, you would validate credentials here
-    router.push(`/${credentials.customerId}`);
+    router.push(`/customer/${credentials.customerId}`);
   };
 
   return (
