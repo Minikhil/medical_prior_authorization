@@ -1,20 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useRef } from "react";
 import { generateClient } from "aws-amplify/data";
 import type { Schema } from "@/amplify/data/resource";
-import { useRouter } from 'next/navigation'
+import "../app.css";
+import "../globals.css"
 import { Amplify } from "aws-amplify";
+import { useRouter } from 'next/navigation'
 import outputs from "@/amplify_outputs.json";
 import "@aws-amplify/ui-react/styles.css";
 import { ChevronDown, Download, Plus, Search } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
   Dialog,
   DialogContent,
@@ -23,20 +22,28 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
 Amplify.configure(outputs);
 
+
 const dynamoDbClient = generateClient<Schema>();
 
-export default function App() {
+export default function Page({ params }: { params: { customerId: string } }) {
+  const router = useRouter();
+  const [fullUrl, setFullUrl] = useState('');
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [customerName, setCustomerName] = useState('');
 
   const [newOrder, setNewOrder] = useState({
     customerName: "",
     customerEmail: "",
     sku: "",
-    customerId: "",
+    customerId: params.customerId,
   })
 
   const [statusFilter, setStatusFilter] = useState("all");
@@ -67,13 +74,14 @@ export default function App() {
       id: newOrderId,
       status: "Processing",
       createdAt: new Date().toISOString(),
+      customerId: params.customerId,
     }
     setOrders((prev) => [createdOrder, ...prev])
     setNewOrder({
       customerName: "",
       customerEmail: "",
       sku: "",
-      customerId: "",
+      customerId: params.customerId,
     })
   }
 
@@ -84,8 +92,19 @@ export default function App() {
   async function getOrdersV2() {
     try {
       setLoading(true);
-      dynamoDbClient.models.Order.observeQuery().subscribe({
-        next: (data) => setOrders([...data.items]),
+      dynamoDbClient.models.Order.observeQuery({
+        filter: {
+          customerId: {
+            eq: params.customerId
+          }
+        }
+      }).subscribe({
+        next: (data) => {
+          setOrders([...data.items]);
+          if (data.items.length > 0) {
+            setCustomerName(data.items[0].customerName);
+          }
+        },
       });
     } catch (error) {
       console.error("Error fetching orders:", error);
@@ -103,7 +122,76 @@ export default function App() {
       {/* Order History Card */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
-          <CardTitle className="text-2xl font-bold">Order History</CardTitle>
+          <CardTitle className="text-2xl font-bold">
+            {customerName 
+              ? `Order History for ${customerName}`
+              : 'Order History'
+            }
+          </CardTitle>
+          <div className="flex space-x-2">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Order
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create New Order</DialogTitle>
+                  <DialogDescription>Fill in the details to create a new order.</DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <Label htmlFor="customerName">Customer Name</Label>
+                    <Input
+                      id="customerName"
+                      name="customerName"
+                      value={newOrder.customerName}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="customerEmail">Customer Email</Label>
+                    <Input
+                      id="customerEmail"
+                      name="customerEmail"
+                      type="email"
+                      value={newOrder.customerEmail}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="customerId">Customer ID</Label>
+                    <Input
+                      id="customerId"
+                      name="customerId"
+                      value={params.customerId}
+                      disabled
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="sku">SKU</Label>
+                    <Input 
+                      id="sku" 
+                      name="sku" 
+                      value={newOrder.sku} 
+                      onChange={handleInputChange} 
+                      required 
+                    />
+                  </div>
+                  <Button type="submit">Create Order</Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+            <Button variant="outline">
+              <Download className="mr-2 h-4 w-4" />
+              Export
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between space-x-2 pb-4">
@@ -184,7 +272,3 @@ export default function App() {
     </main>
   )
 }
-
-
-
-
