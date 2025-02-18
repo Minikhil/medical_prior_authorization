@@ -5,8 +5,8 @@ import "./app.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Code Names AI",
-  description: "Codenames AI is an innovative web application that generates and displays customizable boards for the popular board game Codenames. Our unique approach sets us apart from other online Codenames apps by allowing users to input five categories, which are then used to construct the game board with relevant words.",
+  title: "Gander",
+  description: "Experience the Automation System for Global Aviation, streamlining operations across multiple devices on a shared platform.",
 };
 
 export default function RootLayout({
