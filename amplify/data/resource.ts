@@ -36,12 +36,12 @@ const schema = a.schema({
     .model({
       customerName: a.string().required(),
       customerEmail: a.string().required(),
-      orderDate: a.string().required(), // ISO date string
-      totalAmount: a.float().required(),
+      customerId: a.string().required(),
+      totalAmount: a.float(),
       sku: a.string().required(), // Part SKU
       status: a.enum(['PENDING', 'PROCESSING', 'COMPLETED', 'CANCELLED']),
       shippingAddress: a.json().required(), // Shipping address details
-      paymentDetails: a.json().required(), // Payment method and transaction details
+      paymentDetails: a.json(), // Payment method and transaction details
     })
     .authorization((allow) => [
       allow.publicApiKey(), // Allow API key-based access
