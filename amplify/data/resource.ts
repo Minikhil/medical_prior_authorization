@@ -1,89 +1,61 @@
 import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
 
-/*== STEP 1 ===============================================================
-The section below creates a Todo database table with a "content" field. Try
-adding a new "isDone" field as a boolean. The authorization rule below
-specifies that any user authenticated via an API key can "create", "read",
-"update", and "delete" any "Todo" records.
-=========================================================================*/
+// Define the schema for the CodenamesGames table
 // const schema = a.schema({
-//   Todo: a
+//   GameSessions: a
 //     .model({
-//       content: a.string(),
+//       GameID: a.string().required(), // Partition Key
+//       CurrentTeam: a.string().required(), // Current team (red or blue)
+//       RedCardsLeft: a.integer().required(), // Number of red cards left
+//       BlueCardsLeft: a.integer().required(), // Number of blue cards left
+//       TotalCardsLeft: a.integer().required(), // Number of total cards left
+//       Categories: a.json().required(),  // Using JSON to represent the list of categories
+//       Cards: a.json().required(),       // Using JSON to represent the list of card objects
 //     })
-//     .authorization((allow) => [allow.publicApiKey()]),
+//     .authorization((allow) => [
+//       allow.publicApiKey(), // Allow API key-based access
+//     ]),
 // });
 
-// export type Schema = ClientSchema<typeof schema>;
+// // Export the schema type
+// export type GameSessionsSchema = ClientSchema<typeof schema>;
 
-// export const data = defineData({
+// // Define and export the Amplify data configuration
+// export const gameSessionsdata = defineData({
 //   schema,
 //   authorizationModes: {
 //     defaultAuthorizationMode: "apiKey",
 //     apiKeyAuthorizationMode: {
-//       expiresInDays: 30,
+//       expiresInDays: 365, // API key expires after 1 year
 //     },
 //   },
 // });
 
-/*== STEP 2 ===============================================================
-Go to your frontend source code. From your client-side code, generate a
-Data client to make CRUDL requests to your table. (THIS SNIPPET WILL ONLY
-WORK IN THE FRONTEND CODE FILE.)
-
-Using JavaScript or Next.js React Server Components, Middleware, Server 
-Actions or Pages Router? Review how to generate Data clients for those use
-cases: https://docs.amplify.aws/gen2/build-a-backend/data/connect-to-API/
-=========================================================================*/
-
-/*
-"use client"
-import { generateClient } from "aws-amplify/data";
-import type { Schema } from "@/amplify/data/resource";
-
-const client = generateClient<Schema>() // use this Data client for CRUDL requests
-*/
-
-/*== STEP 3 ===============================================================
-Fetch records from the database and use them in your frontend component.
-(THIS SNIPPET WILL ONLY WORK IN THE FRONTEND CODE FILE.)
-=========================================================================*/
-
-/* For example, in a React component, you can use this snippet in your
-  function's RETURN statement */
-// const { data: todos } = await client.models.Todo.list()
-
-// return <ul>{todos.map(todo => <li key={todo.id}>{todo.content}</li>)}</ul>
-
-//code names 
-
-// Define the schema for the CodenamesGames table
 const schema = a.schema({
-  GameSessions: a
+  Order: a
     .model({
-      GameID: a.string().required(), // Partition Key
-      CurrentTeam: a.string().required(), // Current team (red or blue)
-      RedCardsLeft: a.integer().required(), // Number of red cards left
-      BlueCardsLeft: a.integer().required(), // Number of blue cards left
-      TotalCardsLeft: a.integer().required(), // Number of total cards left
-      Categories: a.json().required(),  // Using JSON to represent the list of categories
-      Cards: a.json().required(),       // Using JSON to represent the list of card objects
+      customerName: a.string().required(),
+      customerEmail: a.string().required(),
+      orderDate: a.string().required(), // ISO date string
+      totalAmount: a.float().required(),
+      sku: a.string().required(), // Part SKU
+      status: a.enum(['PENDING', 'PROCESSING', 'COMPLETED', 'CANCELLED']),
+      shippingAddress: a.json().required(), // Shipping address details
+      paymentDetails: a.json().required(), // Payment method and transaction details
     })
     .authorization((allow) => [
       allow.publicApiKey(), // Allow API key-based access
     ]),
 });
 
-// Export the schema type
-export type GameSessionsSchema = ClientSchema<typeof schema>;
+export type Schema = ClientSchema<typeof schema>;
 
-// Define and export the Amplify data configuration
-export const gameSessionsdata = defineData({
+export const data = defineData({
   schema,
   authorizationModes: {
     defaultAuthorizationMode: "apiKey",
     apiKeyAuthorizationMode: {
-      expiresInDays: 365, // API key expires after 1 year
+      expiresInDays: 365,
     },
   },
 });
