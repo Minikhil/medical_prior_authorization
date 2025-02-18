@@ -118,11 +118,11 @@ export default function Page({ params }: { params: { customerId: string } }) {
   }, []);
   
   return (
-    <main className="p-8 min-h-screen bg-background">
+    <main className="p-8 min-h-screen bg-[#111111]">
       {/* Order History Card */}
-      <Card>
+      <Card className="border border-gray-800 bg-[#1A1A1A] shadow-2xl">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
-          <CardTitle className="text-2xl font-bold">
+          <CardTitle className="text-2xl font-bold text-white">
             {customerName 
               ? `Order History for ${customerName}`
               : 'Order History'
@@ -131,29 +131,30 @@ export default function Page({ params }: { params: { customerId: string } }) {
           <div className="flex space-x-2">
             <Dialog>
               <DialogTrigger asChild>
-                <Button>
+                <Button className="bg-[#00C853] hover:bg-[#00A847] text-white">
                   <Plus className="mr-2 h-4 w-4" />
                   New Order
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="bg-[#1A1A1A] border-gray-800">
                 <DialogHeader>
-                  <DialogTitle>Create New Order</DialogTitle>
-                  <DialogDescription>Fill in the details to create a new order.</DialogDescription>
+                  <DialogTitle className="text-white">Create New Order</DialogTitle>
+                  <DialogDescription className="text-gray-400">Fill in the details to create a new order.</DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <Label htmlFor="customerName">Customer Name</Label>
+                    <Label htmlFor="customerName" className="text-gray-300">Customer Name</Label>
                     <Input
                       id="customerName"
                       name="customerName"
                       value={newOrder.customerName}
                       onChange={handleInputChange}
                       required
+                      className="bg-[#222222] border-gray-800 text-white placeholder:text-gray-600"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="customerEmail">Customer Email</Label>
+                    <Label htmlFor="customerEmail" className="text-gray-300">Customer Email</Label>
                     <Input
                       id="customerEmail"
                       name="customerEmail"
@@ -161,36 +162,37 @@ export default function Page({ params }: { params: { customerId: string } }) {
                       value={newOrder.customerEmail}
                       onChange={handleInputChange}
                       required
+                      className="bg-[#222222] border-gray-800 text-white placeholder:text-gray-600"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="customerId">Customer ID</Label>
+                    <Label htmlFor="customerId" className="text-gray-300">Customer ID</Label>
                     <Input
                       id="customerId"
                       name="customerId"
                       value={params.customerId}
                       disabled
                       required
+                      className="bg-[#222222] border-gray-800 text-white placeholder:text-gray-600"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="sku">SKU</Label>
+                    <Label htmlFor="sku" className="text-gray-300">SKU</Label>
                     <Input 
                       id="sku" 
                       name="sku" 
                       value={newOrder.sku} 
                       onChange={handleInputChange} 
                       required 
+                      className="bg-[#222222] border-gray-800 text-white placeholder:text-gray-600"
                     />
                   </div>
-                  <Button type="submit">Create Order</Button>
+                  <Button type="submit" className="bg-[#00C853] hover:bg-[#00A847] text-white w-full">
+                    Create Order
+                  </Button>
                 </form>
               </DialogContent>
             </Dialog>
-            <Button variant="outline">
-              <Download className="mr-2 h-4 w-4" />
-              Export
-            </Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -200,59 +202,53 @@ export default function Page({ params }: { params: { customerId: string } }) {
                 value={statusFilter}
                 onValueChange={setStatusFilter}
               >
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-[180px] bg-[#222222] border-gray-800 text-gray-300">
                   <SelectValue placeholder="Select a status" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="processing">Processing</SelectItem>
-                  <SelectItem value="shipped">Shipped</SelectItem>
+                <SelectContent className="bg-[#1A1A1A] border-gray-800">
+                  <SelectItem value="all" className="text-gray-300">All Statuses</SelectItem>
+                  <SelectItem value="completed" className="text-gray-300">Completed</SelectItem>
+                  <SelectItem value="processing" className="text-gray-300">Processing</SelectItem>
+                  <SelectItem value="shipped" className="text-gray-300">Shipped</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Button variant="outline" size="sm">
-                <ChevronDown className="h-4 w-4" />
-                <span>Sort</span>
-              </Button>
             </div>
           </div>
           {loading ? (
             <div className="flex justify-center items-center h-64">
-              <div className="animate-pulse text-muted-foreground">Loading orders...</div>
+              <div className="animate-pulse text-gray-400">Loading orders...</div>
             </div>
           ) : orders.length === 0 ? (
-            <div className="text-center py-12 bg-muted rounded-lg">
-              <p className="text-muted-foreground">No orders found</p>
+            <div className="text-center py-12 bg-[#222222] rounded-lg">
+              <p className="text-gray-400">No orders found</p>
             </div>
           ) : (
-            <div className="rounded-md border">
+            <div className="rounded-md border border-gray-800">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[100px]">Order ID</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>SKU</TableHead>
-                    <TableHead className="text-right">Date</TableHead>
+                  <TableRow className="border-gray-800">
+                    <TableHead className="w-[100px] text-gray-300">Order ID</TableHead>
+                    <TableHead className="text-gray-300">Customer</TableHead>
+                    <TableHead className="text-gray-300">Status</TableHead>
+                    <TableHead className="text-gray-300">SKU</TableHead>
+                    <TableHead className="text-right text-gray-300">Date</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredOrders.map((order) => (
-                    <TableRow key={order.id}>
-                      <TableCell className="font-medium">{order.id}</TableCell>
+                    <TableRow key={order.id} className="border-gray-800">
+                      <TableCell className="font-medium text-white">{order.id}</TableCell>
                       <TableCell>
-                        <div>{order.customerName}</div>
-                        <div className="text-sm text-muted-foreground">{order.customerEmail}</div>
+                        <div className="text-white">{order.customerName}</div>
+                        <div className="text-sm text-gray-400">{order.customerEmail}</div>
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary" className={getStatusColor(order.status)}>
                           {order.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>{order.sku}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-white">{order.sku}</TableCell>
+                      <TableCell className="text-right text-white">
                         {new Date(order.createdAt).toLocaleDateString("en-US", {
                           year: "numeric",
                           month: "short",
