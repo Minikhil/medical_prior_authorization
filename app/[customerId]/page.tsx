@@ -38,6 +38,7 @@ export default function Page({ params }: { params: { customerId: string } }) {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [customerName, setCustomerName] = useState('');
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const [newOrder, setNewOrder] = useState({
     sku: "",
@@ -82,7 +83,9 @@ export default function Page({ params }: { params: { customerId: string } }) {
         sku: "",
         shippingAddress: "",
         customerId: params.customerId,
-      })
+      });
+      
+      setDialogOpen(false);
     } catch (error) {
       console.error("Error creating order:", error);
     }
@@ -132,7 +135,7 @@ export default function Page({ params }: { params: { customerId: string } }) {
             }
           </CardTitle>
           <div className="flex space-x-2">
-            <Dialog>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="bg-[#00C853] hover:bg-[#00A847] text-white">
                   <Plus className="mr-2 h-4 w-4" />
