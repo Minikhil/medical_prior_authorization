@@ -39,6 +39,7 @@ export default function Page({ params }: { params: { customerId: string } }) {
   const [loading, setLoading] = useState(true);
   const [customerName, setCustomerName] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [newOrder, setNewOrder] = useState({
     sku: "",
@@ -48,14 +49,14 @@ export default function Page({ params }: { params: { customerId: string } }) {
 
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const getStatusColor = (status : string) => {
+  const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case "completed":
         return "bg-green-100 text-green-800"
-      case "processing":
+      case "pending":
         return "bg-blue-100 text-blue-800"
-      case "shipped":
-        return "bg-yellow-100 text-yellow-800"
+      case "cancelled":
+        return "bg-red-100 text-red-800"
       default:
         return "bg-gray-100 text-gray-800"
     }
@@ -74,7 +75,7 @@ export default function Page({ params }: { params: { customerId: string } }) {
         sku: newOrder.sku,
         shippingAddress: JSON.stringify({ address: newOrder.shippingAddress }),
         customerId: params.customerId,
-        status: "PROCESSING",
+        status: "PENDING",
         customerName: customerName,
         customerEmail: orders[0]?.customerEmail || "",
       });
@@ -88,6 +89,7 @@ export default function Page({ params }: { params: { customerId: string } }) {
       setDialogOpen(false);
     } catch (error) {
       console.error("Error creating order:", error);
+      setError("There was a problem creating your order. Please try again.");
     }
   }
 
@@ -122,9 +124,47 @@ export default function Page({ params }: { params: { customerId: string } }) {
   useEffect(() => {
     getOrdersV2();
   }, []);
-  
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
   return (
     <main className="p-8 min-h-screen bg-[#111111]">
+      {error && (
+        <div className="fixed top-4 right-4 z-50 animate-slide-down">
+          <div className="bg-red-500 text-white px-6 py-4 rounded-lg shadow-lg">
+            <div className="flex items-center space-x-2">
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                className="h-6 w-6" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+                />
+              </svg>
+              <span>{error}</span>
+              <button 
+                onClick={() => setError(null)}
+                className="ml-4 text-white hover:text-gray-200"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Order History Card */}
       <Card className="border border-gray-800 bg-[#1A1A1A] shadow-2xl">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
@@ -196,9 +236,9 @@ export default function Page({ params }: { params: { customerId: string } }) {
                 </SelectTrigger>
                 <SelectContent className="bg-[#1A1A1A] border-gray-800">
                   <SelectItem value="all" className="text-gray-300">All Statuses</SelectItem>
-                  <SelectItem value="completed" className="text-gray-300">Completed</SelectItem>
-                  <SelectItem value="processing" className="text-gray-300">Processing</SelectItem>
-                  <SelectItem value="shipped" className="text-gray-300">Shipped</SelectItem>
+                  <SelectItem value="COMPLETED" className="text-gray-300">Completed</SelectItem>
+                  <SelectItem value="PENDING" className="text-gray-300">Pending</SelectItem>
+                  <SelectItem value="CANCELLED" className="text-gray-300">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -220,7 +260,7 @@ export default function Page({ params }: { params: { customerId: string } }) {
                     <TableHead className="text-gray-300">Customer</TableHead>
                     <TableHead className="text-gray-300">Status</TableHead>
                     <TableHead className="text-gray-300">SKU</TableHead>
-                    <TableHead className="text-right text-gray-300">Date</TableHead>
+                    <TableHead className="text-right text-gray-300">Order Date</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

@@ -28,9 +28,18 @@ Amplify.configure(outputs);
 
 const dynamoDbClient = generateClient<Schema>();
 
+enum OrderStatus {
+  PENDING = "PENDING",
+  PROCESSING = "PROCESSING",
+  COMPLETED = "COMPLETED",
+  CANCELLED = "CANCELLED"
+}
+
 export default function App() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
 
   const [newOrder, setNewOrder] = useState({
     customerName: "",
@@ -41,14 +50,16 @@ export default function App() {
 
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const getStatusColor = (status : string) => {
-    switch (status.toLowerCase()) {
-      case "completed":
+  const getStatusColor = (status: OrderStatus) => {
+    switch (status) {
+      case OrderStatus.COMPLETED:
         return "bg-green-100 text-green-800"
-      case "processing":
+      case OrderStatus.PROCESSING:
         return "bg-blue-100 text-blue-800"
-      case "shipped":
+      case OrderStatus.PENDING:
         return "bg-yellow-100 text-yellow-800"
+      case OrderStatus.CANCELLED:
+        return "bg-red-100 text-red-800"
       default:
         return "bg-gray-100 text-gray-800"
     }
@@ -97,7 +108,43 @@ export default function App() {
   useEffect(() => {
     getOrdersV2();
   }, []);
-  
+
+  const handleStatusUpdate = async (newStatus: OrderStatus) => {
+    try {
+      if (!selectedOrder) return;
+      
+      // First fetch the latest order record
+      const { data: orderData, errors } = await dynamoDbClient.models.Order.list({
+        filter: { id: { eq: selectedOrder.id } }
+      });
+
+      if (errors) {
+        console.error('Errors occurred during query:', errors);
+        throw new Error('Failed to fetch order data.');
+      }
+
+      const latestOrder = orderData[0];
+      if (!latestOrder) {
+        throw new Error('Order not found');
+      }
+
+      console.log('Updating order with status:', newStatus); // Debug log
+      const updated = await dynamoDbClient.models.Order.update({
+        id: latestOrder.id,  // Make sure we include the id
+        status: newStatus    // The enum value should work directly
+      });
+
+      setOrders(orders.map(order => 
+        order.id === selectedOrder.id ? updated : order
+      ));
+      
+      setIsUpdateDialogOpen(false);
+      setSelectedOrder(null);
+    } catch (error) {
+      console.error("Error updating order status:", error);
+    }
+  };
+
   return (
     <main className="p-8 min-h-screen bg-background">
       {/* Order History Card */}
@@ -119,7 +166,8 @@ export default function App() {
                   <SelectItem value="all">All Statuses</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="processing">Processing</SelectItem>
-                  <SelectItem value="shipped">Shipped</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -152,14 +200,21 @@ export default function App() {
                 </TableHeader>
                 <TableBody>
                   {filteredOrders.map((order) => (
-                    <TableRow key={order.id}>
+                    <TableRow 
+                      key={order.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => {
+                        setSelectedOrder(order);
+                        setIsUpdateDialogOpen(true);
+                      }}
+                    >
                       <TableCell className="font-medium">{order.id}</TableCell>
                       <TableCell>
                         <div>{order.customerName}</div>
                         <div className="text-sm text-muted-foreground">{order.customerEmail}</div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary" className={getStatusColor(order.status)}>
+                        <Badge variant="secondary" className={getStatusColor(order.status as OrderStatus)}>
                           {order.status}
                         </Badge>
                       </TableCell>
@@ -181,6 +236,33 @@ export default function App() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={isUpdateDialogOpen} onOpenChange={setIsUpdateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Order Status</DialogTitle>
+            <DialogDescription>
+              Update the status for order {selectedOrder?.id}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label>Current Status: {selectedOrder?.status}</Label>
+              <Select onValueChange={handleStatusUpdate}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select new status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={OrderStatus.COMPLETED}>Completed</SelectItem>
+                  <SelectItem value={OrderStatus.PROCESSING}>Processing</SelectItem>
+                  <SelectItem value={OrderStatus.PENDING}>Pending</SelectItem>
+                  <SelectItem value={OrderStatus.CANCELLED}>Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </main>
   )
 }
