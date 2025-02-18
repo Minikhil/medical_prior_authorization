@@ -40,9 +40,8 @@ export default function Page({ params }: { params: { customerId: string } }) {
   const [customerName, setCustomerName] = useState('');
 
   const [newOrder, setNewOrder] = useState({
-    customerName: "",
-    customerEmail: "",
     sku: "",
+    shippingAddress: "",
     customerId: params.customerId,
   })
 
@@ -66,23 +65,27 @@ export default function Page({ params }: { params: { customerId: string } }) {
     setNewOrder((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    const newOrderId = `ORD-${String(orders.length + 1).padStart(3, "0")}`
-    const createdOrder = {
-      ...newOrder,
-      id: newOrderId,
-      status: "Processing",
-      createdAt: new Date().toISOString(),
-      customerId: params.customerId,
+  
+    try {
+      await dynamoDbClient.models.Order.create({
+        sku: newOrder.sku,
+        shippingAddress: JSON.stringify({ address: newOrder.shippingAddress }),
+        customerId: params.customerId,
+        status: "PROCESSING",
+        customerName: customerName,
+        customerEmail: orders[0]?.customerEmail || "",
+      });
+
+      setNewOrder({
+        sku: "",
+        shippingAddress: "",
+        customerId: params.customerId,
+      })
+    } catch (error) {
+      console.error("Error creating order:", error);
     }
-    setOrders((prev) => [createdOrder, ...prev])
-    setNewOrder({
-      customerName: "",
-      customerEmail: "",
-      sku: "",
-      customerId: params.customerId,
-    })
   }
 
   const filteredOrders = orders.filter((order) => {
@@ -139,43 +142,11 @@ export default function Page({ params }: { params: { customerId: string } }) {
               <DialogContent className="bg-[#1A1A1A] border-gray-800">
                 <DialogHeader>
                   <DialogTitle className="text-white">Create New Order</DialogTitle>
-                  <DialogDescription className="text-gray-400">Fill in the details to create a new order.</DialogDescription>
+                  <DialogDescription className="text-gray-400">
+                    Enter the SKU and shipping address for your new order.
+                  </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <Label htmlFor="customerName" className="text-gray-300">Customer Name</Label>
-                    <Input
-                      id="customerName"
-                      name="customerName"
-                      value={newOrder.customerName}
-                      onChange={handleInputChange}
-                      required
-                      className="bg-[#222222] border-gray-800 text-white placeholder:text-gray-600"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="customerEmail" className="text-gray-300">Customer Email</Label>
-                    <Input
-                      id="customerEmail"
-                      name="customerEmail"
-                      type="email"
-                      value={newOrder.customerEmail}
-                      onChange={handleInputChange}
-                      required
-                      className="bg-[#222222] border-gray-800 text-white placeholder:text-gray-600"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="customerId" className="text-gray-300">Customer ID</Label>
-                    <Input
-                      id="customerId"
-                      name="customerId"
-                      value={params.customerId}
-                      disabled
-                      required
-                      className="bg-[#222222] border-gray-800 text-white placeholder:text-gray-600"
-                    />
-                  </div>
                   <div>
                     <Label htmlFor="sku" className="text-gray-300">SKU</Label>
                     <Input 
@@ -183,13 +154,28 @@ export default function Page({ params }: { params: { customerId: string } }) {
                       name="sku" 
                       value={newOrder.sku} 
                       onChange={handleInputChange} 
+                      placeholder="Enter product SKU"
                       required 
                       className="bg-[#222222] border-gray-800 text-white placeholder:text-gray-600"
                     />
                   </div>
-                  <Button type="submit" className="bg-[#00C853] hover:bg-[#00A847] text-white w-full">
-                    Create Order
-                  </Button>
+                  <div>
+                    <Label htmlFor="shippingAddress" className="text-gray-300">Shipping Address</Label>
+                    <Input 
+                      id="shippingAddress" 
+                      name="shippingAddress" 
+                      value={newOrder.shippingAddress} 
+                      onChange={handleInputChange}
+                      placeholder="Enter shipping address"
+                      required 
+                      className="bg-[#222222] border-gray-800 text-white placeholder:text-gray-600"
+                    />
+                  </div>
+                  <div className="pt-2">
+                    <Button type="submit" className="bg-[#00C853] hover:bg-[#00A847] text-white w-full">
+                      Create Order
+                    </Button>
+                  </div>
                 </form>
               </DialogContent>
             </Dialog>
