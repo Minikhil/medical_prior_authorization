@@ -3,7 +3,7 @@ import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
 const schema = a.schema({
   PriorAuthorizations: a
     .model({
-      employeeId: a.string().required(),
+      employeeId: a.string(),
       patientName: a.string().required(),
       patientDateOfBirth: a.date().required(),
       status: a.enum(['PENDING', 'COMPLETED', 'SUBMITTED', 'REJECTED', 'CANCELLED']),
