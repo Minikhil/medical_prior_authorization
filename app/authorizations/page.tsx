@@ -95,56 +95,56 @@ export default function App() {
     return statusFilter === "all" || auth.status.toLowerCase() === statusFilter.toLowerCase();
   });
 
-  // async function getAuthorizations() {
-  //   try {
-  //     setLoading(true);
-  //     dynamoDbClient.models.PriorAuthorizations.observeQuery().subscribe({
-  //       next: (data) => setAuthorizations([...data.items]),
-  //     });
-  //   } catch (error) {
-  //     console.error("Error fetching authorizations:", error);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // }
+  async function getAuthorizations() {
+    try {
+      setLoading(true);
+      dynamoDbClient.models.PriorAuthorizations.observeQuery().subscribe({
+        next: (data) => setAuthorizations([...data.items]),
+      });
+    } catch (error) {
+      console.error("Error fetching authorizations:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
 
-  // useEffect(() => {
-  //   getAuthorizations();
-  // }, []);
+  useEffect(() => {
+    getAuthorizations();
+  }, []);
 
-  // const handleStatusUpdate = async (newStatus: AuthStatus) => {
-  //   try {
-  //     if (!selectedAuth) return;
+  const handleStatusUpdate = async (newStatus: AuthStatus) => {
+    try {
+      if (!selectedAuth) return;
       
-  //     const { data: authData, errors } = await dynamoDbClient.models.PriorAuthorizations.list({
-  //       filter: { id: { eq: selectedAuth.id } }
-  //     });
+      const { data: authData, errors } = await dynamoDbClient.models.PriorAuthorizations.list({
+        filter: { id: { eq: selectedAuth.id } }
+      });
 
-  //     if (errors) {
-  //       console.error('Errors occurred during query:', errors);
-  //       throw new Error('Failed to fetch authorization data.');
-  //     }
+      if (errors) {
+        console.error('Errors occurred during query:', errors);
+        throw new Error('Failed to fetch authorization data.');
+      }
 
-  //     const latestAuth = authData[0];
-  //     if (!latestAuth) {
-  //       throw new Error('Authorization not found');
-  //     }
+      const latestAuth = authData[0];
+      if (!latestAuth) {
+        throw new Error('Authorization not found');
+      }
 
-  //     const updated = await dynamoDbClient.models.PriorAuthorizations.update({
-  //       id: latestAuth.id,
-  //       status: newStatus
-  //     });
+      const updated = await dynamoDbClient.models.PriorAuthorizations.update({
+        id: latestAuth.id,
+        status: newStatus
+      });
 
-  //     setAuthorizations(authorizations.map(auth => 
-  //       auth.id === selectedAuth.id ? updated : auth
-  //     ));
+      setAuthorizations(authorizations.map(auth => 
+        auth.id === selectedAuth.id ? updated : auth
+      ));
       
-  //     setIsUpdateDialogOpen(false);
-  //     setSelectedAuth(null);
-  //   } catch (error) {
-  //     console.error("Error updating authorization status:", error);
-  //   }
-  // };
+      setIsUpdateDialogOpen(false);
+      setSelectedAuth(null);
+    } catch (error) {
+      console.error("Error updating authorization status:", error);
+    }
+  };
 
   return (
     <main className="p-8 min-h-screen bg-background">
@@ -229,7 +229,7 @@ export default function App() {
         </CardContent>
       </Card>
 
-      {/* <Dialog open={isUpdateDialogOpen} onOpenChange={setIsUpdateDialogOpen}>
+      <Dialog open={isUpdateDialogOpen} onOpenChange={setIsUpdateDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Update Authorization Status</DialogTitle>
@@ -255,7 +255,7 @@ export default function App() {
             </div>
           </div>
         </DialogContent>
-      </Dialog> */}
+      </Dialog>
     </main>
   )
 }
