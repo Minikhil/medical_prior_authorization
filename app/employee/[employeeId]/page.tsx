@@ -68,62 +68,62 @@ export default function Page({ params }: { params: { customerId: string } }) {
     setNewPriorAuth((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+  // const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  //   e.preventDefault()
   
-    try {
-      await dynamoDbClient.models.PriorAuthorizations.create({
-        patientName: newPriorAuth.patientName,
-        patientDateOfBirth: new Date(newPriorAuth.patientDateOfBirth),
-        employeeId: params.customerId,
-        status: "PENDING",
-        cptCodes: JSON.stringify(newPriorAuth.cptCodes),
-        icdCodes: JSON.stringify(newPriorAuth.icdCodes),
-      });
+  //   try {
+  //     await dynamoDbClient.models.PriorAuthorizations.create({
+  //       patientName: newPriorAuth.patientName,
+  //       patientDateOfBirth: new Date(newPriorAuth.patientDateOfBirth).toISOString(),
+  //       employeeId: params.customerId,
+  //       status: "PENDING",
+  //       cptCodes: JSON.stringify(newPriorAuth.cptCodes),
+  //       icdCodes: JSON.stringify(newPriorAuth.icdCodes),
+  //     });
 
-      setNewPriorAuth({
-        patientName: "",
-        patientDateOfBirth: "",
-        cptCodes: [],
-        icdCodes: [],
-        employeeId: params.customerId,
-      });
+  //     setNewPriorAuth({
+  //       patientName: "",
+  //       patientDateOfBirth: "",
+  //       cptCodes: [],
+  //       icdCodes: [],
+  //       employeeId: params.customerId,
+  //     });
       
-      setDialogOpen(false);
-    } catch (error) {
-      console.error("Error creating prior authorization:", error);
-      setError("There was a problem creating the prior authorization. Please try again.");
-    }
-  }
+  //     setDialogOpen(false);
+  //   } catch (error) {
+  //     console.error("Error creating prior authorization:", error);
+  //     setError("There was a problem creating the prior authorization. Please try again.");
+  //   }
+  // }
 
   const filteredPriorAuths = priorAuths.filter((auth) => {
     return statusFilter === "all" || auth.status.toLowerCase() === statusFilter.toLowerCase();
   });
 
-  async function getPriorAuths() {
-    try {
-      setLoading(true);
-      dynamoDbClient.models.PriorAuthorizations.observeQuery({
-        filter: {
-          employeeId: {
-            eq: params.customerId
-          }
-        }
-      }).subscribe({
-        next: (data) => {
-          setPriorAuths([...data.items]);
-        },
-      });
-    } catch (error) {
-      console.error("Error fetching prior authorizations:", error);
-    } finally {
-      setLoading(false);
-    }
-  }
+  // async function getPriorAuths() {
+  //   try {
+  //     setLoading(true);
+  //     dynamoDbClient.models.PriorAuthorizations.observeQuery({
+  //       filter: {
+  //         employeeId: {
+  //           eq: params.customerId
+  //         }
+  //       }
+  //     }).subscribe({
+  //       next: (data) => {
+  //         setPriorAuths([...data.items]);
+  //       },
+  //     });
+  //   } catch (error) {
+  //     console.error("Error fetching prior authorizations:", error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }
 
-  useEffect(() => {
-    getPriorAuths();
-  }, []);
+  // useEffect(() => {
+  //   getPriorAuths();
+  // }, []);
 
   useEffect(() => {
     if (error) {
@@ -185,7 +185,7 @@ export default function Page({ params }: { params: { customerId: string } }) {
                     Enter the patient information and codes for the new prior authorization.
                   </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
+                {/* <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
                     <Label htmlFor="patientName" className="text-gray-300">Patient Name</Label>
                     <Input 
@@ -215,7 +215,7 @@ export default function Page({ params }: { params: { customerId: string } }) {
                       Create Prior Authorization
                     </Button>
                   </div>
-                </form>
+                </form> */}
               </DialogContent>
             </Dialog>
           </div>
