@@ -1,7 +1,6 @@
 "use client";
 
-
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { generateClient } from "aws-amplify/data";
 import type { Schema } from "@/amplify/data/resource";
 import { Amplify } from "aws-amplify";
@@ -27,23 +26,23 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 Amplify.configure(outputs);
 
-
 const dynamoDbClient = generateClient<Schema>();
 
 export default function Page({ params }: { params: { customerId: string } }) {
   const router = useRouter();
-  const [fullUrl, setFullUrl] = useState('');
-  const [orders, setOrders] = useState<any[]>([]);
+  const [priorAuths, setPriorAuths] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [customerName, setCustomerName] = useState('');
+  const [patientName, setPatientName] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [newOrder, setNewOrder] = useState({
-    sku: "",
-    shippingAddress: "",
-    customerId: params.customerId,
-  })
+  const [newPriorAuth, setNewPriorAuth] = useState({
+    patientName: "",
+    patientDateOfBirth: "",
+    cptCodes: [],
+    icdCodes: [],
+    employeeId: params.customerId,
+  });
 
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -55,6 +54,10 @@ export default function Page({ params }: { params: { customerId: string } }) {
         return "bg-blue-100 text-blue-800"
       case "cancelled":
         return "bg-red-100 text-red-800"
+      case "rejected":
+        return "bg-red-100 text-red-800"
+      case "submitted":
+        return "bg-yellow-100 text-yellow-800"
       default:
         return "bg-gray-100 text-gray-800"
     }
@@ -62,65 +65,64 @@ export default function Page({ params }: { params: { customerId: string } }) {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setNewOrder((prev) => ({ ...prev, [name]: value }))
+    setNewPriorAuth((prev) => ({ ...prev, [name]: value }))
   }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
   
     try {
-      await dynamoDbClient.models.Order.create({
-        sku: newOrder.sku,
-        shippingAddress: JSON.stringify({ address: newOrder.shippingAddress }),
-        customerId: params.customerId,
+      await dynamoDbClient.models.PriorAuthorizations.create({
+        patientName: newPriorAuth.patientName,
+        patientDateOfBirth: new Date(newPriorAuth.patientDateOfBirth),
+        employeeId: params.customerId,
         status: "PENDING",
-        customerName: customerName,
-        customerEmail: orders[0]?.customerEmail || "",
+        cptCodes: JSON.stringify(newPriorAuth.cptCodes),
+        icdCodes: JSON.stringify(newPriorAuth.icdCodes),
       });
 
-      setNewOrder({
-        sku: "",
-        shippingAddress: "",
-        customerId: params.customerId,
+      setNewPriorAuth({
+        patientName: "",
+        patientDateOfBirth: "",
+        cptCodes: [],
+        icdCodes: [],
+        employeeId: params.customerId,
       });
       
       setDialogOpen(false);
     } catch (error) {
-      console.error("Error creating order:", error);
-      setError("There was a problem creating your order. Please try again.");
+      console.error("Error creating prior authorization:", error);
+      setError("There was a problem creating the prior authorization. Please try again.");
     }
   }
 
-  const filteredOrders = orders.filter((order) => {
-    return statusFilter === "all" || order.status.toLowerCase() === statusFilter.toLowerCase();
+  const filteredPriorAuths = priorAuths.filter((auth) => {
+    return statusFilter === "all" || auth.status.toLowerCase() === statusFilter.toLowerCase();
   });
 
-  async function getOrdersV2() {
+  async function getPriorAuths() {
     try {
       setLoading(true);
-      dynamoDbClient.models.Order.observeQuery({
+      dynamoDbClient.models.PriorAuthorizations.observeQuery({
         filter: {
-          customerId: {
+          employeeId: {
             eq: params.customerId
           }
         }
       }).subscribe({
         next: (data) => {
-          setOrders([...data.items]);
-          if (data.items.length > 0) {
-            setCustomerName(data.items[0].customerName);
-          }
+          setPriorAuths([...data.items]);
         },
       });
     } catch (error) {
-      console.error("Error fetching orders:", error);
+      console.error("Error fetching prior authorizations:", error);
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    getOrdersV2();
+    getPriorAuths();
   }, []);
 
   useEffect(() => {
@@ -163,58 +165,54 @@ export default function Page({ params }: { params: { customerId: string } }) {
           </div>
         </div>
       )}
-      {/* Order History Card */}
       <Card className="border border-gray-800 bg-[#1A1A1A] shadow-2xl">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
           <CardTitle className="text-2xl font-bold text-white">
-            {customerName 
-              ? `Order History for ${customerName}`
-              : 'Order History'
-            }
+            Prior Authorizations
           </CardTitle>
           <div className="flex space-x-2">
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="bg-[#00C853] hover:bg-[#00A847] text-white">
                   <Plus className="mr-2 h-4 w-4" />
-                  New Order
+                  New Prior Authorization
                 </Button>
               </DialogTrigger>
               <DialogContent className="bg-[#1A1A1A] border-gray-800">
                 <DialogHeader>
-                  <DialogTitle className="text-white">Create New Order</DialogTitle>
+                  <DialogTitle className="text-white">Create New Prior Authorization</DialogTitle>
                   <DialogDescription className="text-gray-400">
-                    Enter the SKU and shipping address for your new order.
+                    Enter the patient information and codes for the new prior authorization.
                   </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <Label htmlFor="sku" className="text-gray-300">SKU</Label>
+                    <Label htmlFor="patientName" className="text-gray-300">Patient Name</Label>
                     <Input 
-                      id="sku" 
-                      name="sku" 
-                      value={newOrder.sku} 
+                      id="patientName" 
+                      name="patientName" 
+                      value={newPriorAuth.patientName} 
                       onChange={handleInputChange} 
-                      placeholder="Enter product SKU"
+                      placeholder="Enter patient name"
                       required 
                       className="bg-[#222222] border-gray-800 text-white placeholder:text-gray-600"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="shippingAddress" className="text-gray-300">Shipping Address</Label>
+                    <Label htmlFor="patientDateOfBirth" className="text-gray-300">Date of Birth</Label>
                     <Input 
-                      id="shippingAddress" 
-                      name="shippingAddress" 
-                      value={newOrder.shippingAddress} 
+                      id="patientDateOfBirth" 
+                      name="patientDateOfBirth" 
+                      type="date"
+                      value={newPriorAuth.patientDateOfBirth} 
                       onChange={handleInputChange}
-                      placeholder="Enter shipping address"
                       required 
                       className="bg-[#222222] border-gray-800 text-white placeholder:text-gray-600"
                     />
                   </div>
                   <div className="pt-2">
                     <Button type="submit" className="bg-[#00C853] hover:bg-[#00A847] text-white w-full">
-                      Create Order
+                      Create Prior Authorization
                     </Button>
                   </div>
                 </form>
@@ -236,6 +234,8 @@ export default function Page({ params }: { params: { customerId: string } }) {
                   <SelectItem value="all" className="text-gray-300">All Statuses</SelectItem>
                   <SelectItem value="COMPLETED" className="text-gray-300">Completed</SelectItem>
                   <SelectItem value="PENDING" className="text-gray-300">Pending</SelectItem>
+                  <SelectItem value="SUBMITTED" className="text-gray-300">Submitted</SelectItem>
+                  <SelectItem value="REJECTED" className="text-gray-300">Rejected</SelectItem>
                   <SelectItem value="CANCELLED" className="text-gray-300">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
@@ -243,45 +243,44 @@ export default function Page({ params }: { params: { customerId: string } }) {
           </div>
           {loading ? (
             <div className="flex justify-center items-center h-64">
-              <div className="animate-pulse text-gray-400">Loading orders...</div>
+              <div className="animate-pulse text-gray-400">Loading prior authorizations...</div>
             </div>
-          ) : orders.length === 0 ? (
+          ) : priorAuths.length === 0 ? (
             <div className="text-center py-12 bg-[#222222] rounded-lg">
-              <p className="text-gray-400">No orders found</p>
+              <p className="text-gray-400">No prior authorizations found</p>
             </div>
           ) : (
             <div className="rounded-md border border-gray-800">
               <Table>
                 <TableHeader>
                   <TableRow className="border-gray-800">
-                    <TableHead className="w-[100px] text-gray-300">Order ID</TableHead>
-                    <TableHead className="text-gray-300">Customer</TableHead>
+                    <TableHead className="w-[100px] text-gray-300">ID</TableHead>
+                    <TableHead className="text-gray-300">Patient</TableHead>
                     <TableHead className="text-gray-300">Status</TableHead>
-                    <TableHead className="text-gray-300">SKU</TableHead>
-                    <TableHead className="text-right text-gray-300">Order Date</TableHead>
+                    <TableHead className="text-gray-300">Date of Birth</TableHead>
+                    <TableHead className="text-right text-gray-300">Created Date</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredOrders.map((order) => (
-                    <TableRow key={order.id} className="border-gray-800">
-                      <TableCell className="font-medium text-white">{order.id}</TableCell>
+                  {filteredPriorAuths.map((auth) => (
+                    <TableRow key={auth.id} className="border-gray-800">
+                      <TableCell className="font-medium text-white">{auth.id}</TableCell>
                       <TableCell>
-                        <div className="text-white">{order.customerName}</div>
-                        <div className="text-sm text-gray-400">{order.customerEmail}</div>
+                        <div className="text-white">{auth.patientName}</div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary" className={getStatusColor(order.status)}>
-                          {order.status}
+                        <Badge variant="secondary" className={getStatusColor(auth.status)}>
+                          {auth.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-white">{order.sku}</TableCell>
+                      <TableCell className="text-white">
+                        {new Date(auth.patientDateOfBirth).toLocaleDateString()}
+                      </TableCell>
                       <TableCell className="text-right text-white">
-                        {new Date(order.createdAt).toLocaleDateString("en-US", {
+                        {new Date(auth.createdAt).toLocaleDateString("en-US", {
                           year: "numeric",
                           month: "short",
                           day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
                         })}
                       </TableCell>
                     </TableRow>
