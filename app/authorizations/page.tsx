@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import { Amplify } from "aws-amplify";
 import outputs from "@/amplify_outputs.json";
 import "@aws-amplify/ui-react/styles.css";
-import { ChevronDown, Download, Plus, Search } from "lucide-react"
+import { ChevronDown, Download, Plus, Search, Upload } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -23,6 +23,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import * as pdfjsLib from 'pdfjs-dist';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
 
 Amplify.configure(outputs);
 
@@ -41,6 +44,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [selectedAuth, setSelectedAuth] = useState<any>(null);
   const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   const [newAuth, setNewAuth] = useState({
     patientName: "",
@@ -146,11 +150,55 @@ export default function App() {
     }
   };
 
+  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setPdfLoading(true);
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      
+      let fullText = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .join(' ');
+        fullText += pageText + '\n';
+      }
+      
+      console.log("PDF TEXT: ", fullText);
+    } catch (error) {
+      console.error('Error processing PDF:', error);
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
   return (
     <main className="p-8 min-h-screen bg-background">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
           <CardTitle className="text-2xl font-bold">Prior Authorizations</CardTitle>
+          <div className="flex space-x-2">
+            <Input
+              type="file"
+              accept=".pdf"
+              onChange={handlePdfUpload}
+              className="hidden"
+              id="pdf-upload"
+            />
+            <label htmlFor="pdf-upload">
+              <Button variant="outline" size="sm" asChild>
+                <div className="cursor-pointer">
+                  <Upload className="h-4 w-4 mr-2" />
+                  <span>{pdfLoading ? 'Processing...' : 'Upload PDF'}</span>
+                </div>
+              </Button>
+            </label>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between space-x-2 pb-4">
