@@ -153,10 +153,25 @@ export default function App() {
 
     try {
       setPdfLoading(true);
-      // TODO: Implement PDF processing logic
-      console.log("Selected file:", file.name);
+      
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/pdf', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to upload PDF');
+      }
+
+      const data = await response.json();
+      console.log('API Response:', data);
+
     } catch (error) {
       console.error('Error processing PDF:', error);
+      // You might want to show an error message to the user
     } finally {
       setPdfLoading(false);
     }
