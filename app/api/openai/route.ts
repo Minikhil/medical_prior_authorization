@@ -1,55 +1,46 @@
-
 import { NextResponse } from 'next/server';
 
 //https://docs.amplify.aws/react/deploy-and-host/fullstack-branching/secrets-and-vars/
 
 export async function POST(request: Request) {
-  const { categories } = await request.json();
-  
-   const apiKey = process.env.OPENAI_API_KEY;
-  /**
-   *  In development, use the local environment variable; in production, use the secret
-      In Development: When running next dev, process.env.NODE_ENV is automatically set to "development".
-      In Production: When you build and run your app using next build and next start, process.env.NODE_ENV is set to "production".
-      If you don't have an .env file in production, process.env.NODE_ENV will still exist, and it will be set to "production". 
-   */
-
-  // const apiKey = process.env.NODE_ENV === 'development' 
-  //   ? process.env.OPENAI_API_KEY 
-  //   : await secret('OPENAI_API_KEY'); // Make sure to await if using AWS secrets
-
-  // Fetch API key based on environment
-  // let apiKey = null;
-  // if (process.env.NODE_ENV === 'development') {
-  //   apiKey = process.env.OPENAI_API_KEY;
-  // } else {
-  //   // Ensure `secret` is only called in server-side context and not on the client
-  //   apiKey = await secret('OPENAI_API_KEY');
-  // }
-
-  if (!apiKey) {
-    console.error('OPENAI_API_KEY is not set');
-    return NextResponse.json({ error: 'API key is missing' }, { status: 500 });
-  }
-
-  const apiUrl = 'https://api.openai.com/v1/chat/completions';
-
-  // const prompt = `Act as an expert code names game creator. 
-  // Give me 25 words to be used in a game of code names where there are 3 words for each of the following categories so that makes up 15 words, 
-  // for the remaining 10 words give me any random words. The  15 words should be related to their category but not too obvious.
-  // The words should be common words which are widely known by everyone.
-  // Categories: ${categories.join(', ')}. Format the response as a JSON array of arrays. 
-  // Please make sure all the words are good words to be used for a game of codenames where spymasters can give clues connecting more than one word`;
-
-  const prompt = `Act as an expert Codenames game creator.
-  Give me exactly 25 words for a game of Codenames. 
-  Select 3 unique words for each of the following categories: ${categories.join(', ')} (for a total of 15 words), and the remaining 10 words should be random and unrelated to the categories.
-  Ensure the category words are related but not too obvious, and all words are common and widely known.
-  Format the response as a JSON array of 6 sub-arrays: 5 sub-arrays with 3 words each for the categories, and 1 sub-array with 10 random words.`;
-  
-
-
   try {
+    const { pdfText } = await request.json();
+    console.log("Next API/PDF TEXT: ", pdfText);
+
+    if (!pdfText) {
+      return NextResponse.json({ error: 'PDF text is required' }, { status: 400 });
+    }
+
+    const apiKey = process.env.OPENAI_API_KEY;
+    /**
+     *  In development, use the local environment variable; in production, use prod environment variable
+        In Development: When running next dev, process.env.NODE_ENV is automatically set to "development".
+        In Production: When you build and run your app using next build and next start, process.env.NODE_ENV is set to "production".
+        If you don't have an .env file in production, process.env.NODE_ENV will still exist, and it will be set to "production". 
+     */
+
+    if (!apiKey) {
+      console.error('OPENAI_API_KEY is not set');
+      return NextResponse.json({ error: 'API key is missing' }, { status: 500 });
+    }
+
+    const apiUrl = 'https://api.openai.com/v1/chat/completions';
+
+    const prompt = `Act as an expert in Optical Character Recognition.
+    I am providing a doctor visit note pdf, extract out the information carefully double check your work and format it as a JSON object like below example.  
+    {
+    "patient_name": "John Cena",
+    "patient_dob": "04/28/1997",
+    "medical_plan": "Order MRI of the Right Knee Without Contrast",
+    "diagnostic_impressions": "Osteoarthritis of right knee (M17.11)",
+    "icd_codes": ["M17.11"]
+    };
+    Only return the JSON object as response and nothing else
+
+    Here is the text content: ${pdfText}`;
+    
+
+
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
@@ -63,9 +54,21 @@ export async function POST(request: Request) {
       }),
     });
 
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.statusText}`);
+    }
+
     const data = await response.json();
-    return NextResponse.json(data.choices[0].message.content);
+    
+    try {
+      const jsonResponse = JSON.parse(data.choices[0].message.content);
+      return NextResponse.json(jsonResponse);
+    } catch (parseError) {
+      console.error('JSON Parse Error:', parseError);
+      return NextResponse.json({ error: 'Invalid JSON response from OpenAI' }, { status: 500 });
+    }
   } catch (error) {
-    return NextResponse.error();
+    console.error('Request Error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

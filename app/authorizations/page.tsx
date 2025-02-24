@@ -150,6 +150,7 @@ export default function App() {
   const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    console.log("Selected file:", file.name);
 
     try {
       setPdfLoading(true);
@@ -166,8 +167,45 @@ export default function App() {
         throw new Error('Failed to upload PDF');
       }
 
-      const data = await response.json();
-      console.log('API Response:', data);
+      const dataPdf = await response.json();
+      console.log('API Response:', dataPdf);
+
+      // Send the extracted text to OpenAI API
+      const responseOpenai = await fetch('/api/openai', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ pdfText: dataPdf.text }),
+      });
+
+      if (!responseOpenai.ok) {
+        throw new Error(`Failed to process PDF with OpenAI: ${responseOpenai.statusText}`);
+      }
+
+      const dataOpenai = await responseOpenai.json();
+      console.log('OpenAI Response:', dataOpenai);
+
+      
+      // Validate required fields from OpenAI response
+      if (!dataOpenai.patient_name || !dataOpenai.patient_dob) {
+        throw new Error('Required patient information not found in the document');
+      }
+
+      // Create authorization with validated data returns newAuth & errors
+      const { data: newAuth, errors } = await dynamoDbClient.models.PriorAuthorizations.create({
+        patientName: dataOpenai.patient_name,
+        patientDateOfBirth: new Date(dataOpenai.patient_dob).toISOString().split('T')[0],
+        status: AuthStatus.PENDING,
+        cptCodes: JSON.stringify([]),
+        icdCodes: JSON.stringify(dataOpenai.icd_codes || []),
+      });
+
+      if (errors) {
+        throw new Error('Failed to create authorization in database');
+      }
+
+      setAuthorizations(prev => [newAuth, ...prev]);
 
     } catch (error) {
       console.error('Error processing PDF:', error);
@@ -266,8 +304,26 @@ export default function App() {
                           {auth.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>{Array.isArray(auth.cptCodes) ? auth.cptCodes.join(", ") : "N/A"}</TableCell>
-                      <TableCell>{Array.isArray(auth.icdCodes) ? auth.icdCodes.join(", ") : "N/A"}</TableCell>
+                      <TableCell>
+                        {(() => {
+                          try {
+                            const codes = JSON.parse(auth.cptCodes);
+                            return Array.isArray(codes) ? codes.join(", ") : "N/A";
+                          } catch {
+                            return "N/A";
+                          }
+                        })()}
+                      </TableCell>
+                      <TableCell>
+                        {(() => {
+                          try {
+                            const codes = JSON.parse(auth.icdCodes);
+                            return Array.isArray(codes) ? codes.join(", ") : "N/A";
+                          } catch {
+                            return "N/A";
+                          }
+                        })()}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
