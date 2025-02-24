@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+const pdfParse = require('pdf-parse/lib/pdf-parse');
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,12 +21,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // For now, just return basic file info
+    // Convert File to Buffer
+    const buffer = Buffer.from(await file.arrayBuffer());
+    
+    // Extract text from PDF
+    const data = await pdfParse(buffer);
+
     return NextResponse.json({
-      message: 'File received successfully',
+      message: 'File processed successfully',
       filename: file.name,
       size: file.size,
-      type: file.type
+      type: file.type,
+      text: data.text
     });
 
   } catch (error) {
