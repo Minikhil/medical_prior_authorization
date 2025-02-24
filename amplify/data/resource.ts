@@ -9,6 +9,7 @@ const schema = a.schema({
       status: a.enum(['PENDING', 'COMPLETED', 'SUBMITTED', 'REJECTED', 'CANCELLED']),
       cptCodes: a.json(), // Procedure codes
       icdCodes: a.json(), // Diagnosis codes
+      cptCodesExplanation: a.string(),
     })
     .authorization((allow) => [
       allow.publicApiKey(), // Allow API key-based access
