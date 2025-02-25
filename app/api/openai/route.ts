@@ -59,6 +59,7 @@ export async function POST(request: Request) {
     }
 
     const data = await response.json();
+    console.log("OpenAI Response: ", data);
     
     try {
       const jsonResponse = JSON.parse(data.choices[0].message.content);

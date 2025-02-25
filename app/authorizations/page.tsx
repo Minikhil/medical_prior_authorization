@@ -192,13 +192,47 @@ export default function App() {
         throw new Error('Required patient information not found in the document');
       }
 
+      // Send the extracted text medical plan to Ragie API with query 
+      const responseRagie = await fetch('/api/ragie', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query: dataOpenai.medical_plan }),
+      });
+
+      if (!responseRagie.ok) {
+        throw new Error(`Failed to call Ragie API: ${responseRagie.statusText}`);
+      }
+
+      // Extract the JSON response from Ragie
+      const ragieData = await responseRagie.json();
+      const chunkText = ragieData.scored_chunks.map((chunk) => chunk.text);
+      console.log('Ragie Response:', chunkText);
+
+      const getCptCodesResponse = await fetch('/api/getCptCodes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ medicalGuideLines: chunkText, medicalPlan: dataOpenai.medical_plan }),
+      });
+
+      if (!getCptCodesResponse.ok) {
+        throw new Error(`Failed to process getCptCodes api request: ${getCptCodesResponse.statusText}`);
+      }
+
+      const dataOpenaiV2 = await getCptCodesResponse.json();
+      console.log('OpenAI Response V2:', dataOpenaiV2);
+
       // Create authorization with validated data returns newAuth & errors
       const { data: newAuth, errors } = await dynamoDbClient.models.PriorAuthorizations.create({
         patientName: dataOpenai.patient_name,
         patientDateOfBirth: new Date(dataOpenai.patient_dob).toISOString().split('T')[0],
         status: AuthStatus.PENDING,
-        cptCodes: JSON.stringify([]),
         icdCodes: JSON.stringify(dataOpenai.icd_codes || []),
+        cptCodes: JSON.stringify(dataOpenaiV2.cptCode || []),
+        cptCodesExplanation: JSON.stringify(dataOpenaiV2.cptCodesExplanation || []),
       });
 
       if (errors) {
