@@ -10,9 +10,11 @@ frontend:
     preBuild:
         commands:
           - 'echo "OPENAI_API_KEY is set: $(if [ -z \"$OPENAI_API_KEY\" ]; then echo \"No\"; else echo \"Yes\"; fi)"'
+          - 'echo "RAGIE_AI_API_KEY is set: $(if [ -z \"$RAGIE_AI_API_KEY\" ]; then echo \"No\"; else echo \"Yes\"; fi)"'
     build:
       commands:
         - env | grep -e OPENAI_API_KEY >> .env.production
+        - env | grep -e RAGIE_AI_API_KEY >> .env.production
         - npm run build
   artifacts:
     baseDirectory: .next
