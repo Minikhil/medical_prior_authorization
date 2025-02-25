@@ -100,7 +100,13 @@ export default function App() {
     try {
       setLoading(true);
       dynamoDbClient.models.PriorAuthorizations.observeQuery().subscribe({
-        next: (data) => setAuthorizations([...data.items]),
+        next: (data) => {
+          console.log('Fetched authorizations:', data.items);
+          setAuthorizations([...data.items]);
+        },
+        error: (error) => {
+          console.error('Error in subscription:', error);
+        }
       });
     } catch (error) {
       console.error("Error fetching authorizations:", error);
@@ -120,6 +126,8 @@ export default function App() {
       const { data: authData, errors } = await dynamoDbClient.models.PriorAuthorizations.list({
         filter: { id: { eq: selectedAuth.id } }
       });
+      
+      console.log('Found authorization for update:', authData);
 
       if (errors) {
         console.error('Errors occurred during query:', errors);
@@ -135,6 +143,8 @@ export default function App() {
         id: latestAuth.id,
         status: newStatus
       });
+
+      console.log('Updated authorization:', updated);
 
       setAuthorizations(authorizations.map(auth => 
         auth.id === selectedAuth.id ? updated : auth
@@ -316,8 +326,9 @@ export default function App() {
                     <TableHead>Patient Name</TableHead>
                     <TableHead>Date of Birth</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>CPT Codes</TableHead>
                     <TableHead>ICD Codes</TableHead>
+                    <TableHead>CPT Codes</TableHead>
+                    <TableHead>CPT Explanations</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -341,6 +352,16 @@ export default function App() {
                       <TableCell>
                         {(() => {
                           try {
+                            const codes = JSON.parse(auth.icdCodes);
+                            return Array.isArray(codes) ? codes.join(", ") : "N/A";
+                          } catch {
+                            return "N/A";
+                          }
+                        })()}
+                      </TableCell>
+                      <TableCell>
+                        {(() => {
+                          try {
                             const codes = JSON.parse(auth.cptCodes);
                             return Array.isArray(codes) ? codes.join(", ") : "N/A";
                           } catch {
@@ -351,10 +372,10 @@ export default function App() {
                       <TableCell>
                         {(() => {
                           try {
-                            const codes = JSON.parse(auth.icdCodes);
-                            return Array.isArray(codes) ? codes.join(", ") : "N/A";
+                            const explanation = JSON.parse(auth.cptCodesExplanation || '"N/A"');
+                            return explanation;
                           } catch {
-                            return "N/A";
+                            return auth.cptCodesExplanation || "N/A";
                           }
                         })()}
                       </TableCell>
@@ -368,7 +389,7 @@ export default function App() {
       </Card>
 
       <Dialog open={isUpdateDialogOpen} onOpenChange={setIsUpdateDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Update Authorization Status</DialogTitle>
             <DialogDescription>
@@ -390,6 +411,34 @@ export default function App() {
                   <SelectItem value={AuthStatus.CANCELLED}>Cancelled</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>CPT Codes and Explanations:</Label>
+              <div className="rounded-md border p-4 space-y-2">
+                {selectedAuth && (() => {
+                  try {
+                    const codes = JSON.parse(selectedAuth.cptCodes);
+                    return (
+                      <div className="border-b last:border-0 pb-2">
+                        <div className="font-medium">CPT Codes: {codes.join(", ")}</div>
+                        <div className="text-sm text-muted-foreground mt-2">
+                          {(() => {
+                            try {
+                              const explanation = JSON.parse(selectedAuth.cptCodesExplanation || '"No explanation available"');
+                              return explanation;
+                            } catch {
+                              return selectedAuth.cptCodesExplanation || "No explanation available";
+                            }
+                          })()}
+                        </div>
+                      </div>
+                    );
+                  } catch {
+                    return <div>No CPT codes or explanations available</div>;
+                  }
+                })()}
+              </div>
             </div>
           </div>
         </DialogContent>
