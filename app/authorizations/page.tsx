@@ -302,12 +302,6 @@ export default function App() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-center space-x-2">
-              <Button variant="outline" size="sm">
-                <ChevronDown className="h-4 w-4" />
-                <span>Sort</span>
-              </Button>
-            </div>
           </div>
           {loading ? (
             <div className="flex justify-center items-center h-64">
