@@ -184,7 +184,7 @@ export default function App() {
       setValidationResults(null);
 
       // Send the ICD codes to Ragie API to get back related text chunks from medical guidelines
-      const ragieResponse = await fetch('/api/ragie', {
+      const ragieResponse = await fetch('/api/getMedicalGuidelines', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -294,7 +294,7 @@ export default function App() {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('/api/pdf', {
+      const response = await fetch('/api/getPdfText', {
         method: 'POST',
         body: formData,
       });
@@ -307,7 +307,7 @@ export default function App() {
       console.log('API Response:', dataPdf);
 
       // Send the extracted text to OpenAI API
-      const responseOpenai = await fetch('/api/openai', {
+      const responseOpenai = await fetch('/api/getInitialAuthInfo', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -329,7 +329,7 @@ export default function App() {
       }
 
       // Send the extracted text medical plan to Ragie API with query 
-      const responseRagie = await fetch('/api/ragie', {
+      const responseRagie = await fetch('/api/getMedicalGuidelines', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
