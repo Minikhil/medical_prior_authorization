@@ -10,7 +10,7 @@ const schema = a.schema({
       cptCodes: a.json(), // Procedure codes
       icdCodes: a.json(), // Diagnosis codes
       cptCodesExplanation: a.string(),
-      isOverride: a.boolean(),
+      isOverride: a.boolean().default(false),
       overrideExplanation: a.string(),
       medicalPlan: a.string(),
     })
