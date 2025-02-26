@@ -41,6 +41,7 @@ interface EditableAuth {
   patientDateOfBirth: string;
   icdCodes: string[];
   cptCodes: string[];
+  cptCodesExplanation: string;
 }
 
 interface EditableFields {
@@ -68,6 +69,18 @@ export default function App() {
   const [statusFilter, setStatusFilter] = useState("all");
 
   const [editingAuth, setEditingAuth] = useState<EditableAuth | null>(null);
+
+  const [codesModified, setCodesModified] = useState(false);
+  const [codesValidated, setCodesValidated] = useState(false);
+
+  const [validationResults, setValidationResults] = useState<{
+    isValid: boolean;
+    explanation: string;
+    suggestedChanges?: string;
+    confidence: string;
+  } | null>(null);
+
+  const [overrideAcknowledged, setOverrideAcknowledged] = useState(false);
 
   const getStatusColor = (status: AuthStatus) => {
     switch (status) {
@@ -139,6 +152,12 @@ export default function App() {
   const handleFieldChange = (changes: EditableFields) => {
     if (!selectedAuth || !editingAuth) return;
     
+    // Check if ICD or CPT codes are being modified
+    if (changes.icdCodes || changes.cptCodes) {
+      setCodesModified(true);
+      setCodesValidated(false); // Reset validation when codes change
+    }
+
     // Update the editing form state
     setEditingAuth(prev => {
       if (!prev) return prev;
@@ -155,9 +174,71 @@ export default function App() {
     }));
   };
 
+  const handleValidateCodes = async () => {
+    try {
+      if (!editingAuth) return;
+
+      // Reset validation results when starting new validation
+      setValidationResults(null);
+
+      // Send the ICD codes to Ragie API to get back related text chunks from medical guidelines
+      const ragieResponse = await fetch('/api/ragie', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query: editingAuth.icdCodes.join(' ') }), //Convert ICD codes array to a string query
+      });
+
+      if (!ragieResponse.ok) {
+        throw new Error(`Failed to call Ragie API: ${ragieResponse.statusText}`);
+      }
+
+      // Extract the JSON response from Ragie
+      const ragieResponseData = await ragieResponse.json();
+      const ragieResponseChunkText = ragieResponseData.scored_chunks.map((chunk) => chunk.text);
+      console.log('Ragie Response:', ragieResponseChunkText);
+
+      // Call validation API
+      const response = await fetch('/api/validateCodes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          icdCodes: editingAuth.icdCodes,
+          cptCodes: editingAuth.cptCodes,
+          cptCodesExplanation: editingAuth.cptCodesExplanation,
+          medicalGuideLines: ragieResponseChunkText,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Validation failed');
+      }
+
+      const validationResult = await response.json();
+      
+      // Update validation results state instead of showing alert
+      setValidationResults(validationResult);
+      if (validationResult.isValid) {
+        setCodesValidated(true);
+      }
+
+    } catch (error) {
+      console.error('Validation error:', error);
+      setValidationResults({
+        isValid: false,
+        explanation: 'Failed to validate codes. Please try again.',
+        confidence: 'low'
+      });
+    }
+  };
+
   const handleSaveChanges = async () => {
     try {
       if (!selectedAuth || !editingAuth) return;
+      
 
       // Update the record in DynamoDB
       const updated = await dynamoDbClient.models.PriorAuthorizations.update({
@@ -299,7 +380,12 @@ export default function App() {
       patientDateOfBirth: new Date(auth.patientDateOfBirth).toISOString().split('T')[0],
       icdCodes: JSON.parse(auth.icdCodes || '[]'),
       cptCodes: JSON.parse(auth.cptCodes || '[]'),
+      cptCodesExplanation: auth.cptCodesExplanation || 'N/A',
     });
+    setCodesModified(false);
+    setCodesValidated(false);
+    setValidationResults(null);
+    setOverrideAcknowledged(false);
     setIsUpdateDialogOpen(true);
   };
 
@@ -423,6 +509,7 @@ export default function App() {
         </CardContent>
       </Card>
 
+      {/* Update Prior Authorization Dialog */}
       <Dialog open={isUpdateDialogOpen} onOpenChange={setIsUpdateDialogOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
@@ -487,9 +574,65 @@ export default function App() {
                 />
               </div>
 
-              <Button onClick={handleSaveChanges}>
-                Save Changes
-              </Button>
+              {/* Add validation results section */}
+              {validationResults && (
+                <div className={`p-4 rounded-lg border ${
+                  validationResults.isValid 
+                    ? 'bg-green-50 border-green-200 text-green-700' 
+                    : 'bg-red-50 border-red-200 text-red-700'
+                }`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-semibold">
+                      Validation Results ({validationResults.confidence} confidence)
+                    </h4>
+                    <Badge variant="destructive">
+                      {validationResults.isValid ? 'Valid' : 'Invalid'}
+                    </Badge>
+                  </div>
+                  <p className="text-sm mb-2">{validationResults.explanation}</p>
+                  {validationResults.suggestedChanges && (
+                    <div className="text-sm">
+                      <strong>Suggested Changes:</strong>
+                      <p>{validationResults.suggestedChanges}</p>
+                    </div>
+                  )}
+                  
+                  {/* Add acknowledgment checkbox for invalid results */}
+                  {!validationResults.isValid && (
+                    <div className="mt-4 flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="override-acknowledgment"
+                        className="h-4 w-4 rounded border-gray-300"
+                        checked={overrideAcknowledged}
+                        onChange={(e) => setOverrideAcknowledged(e.target.checked)}
+                      />
+                      <label 
+                        htmlFor="override-acknowledgment" 
+                        className="text-sm font-medium text-red-700"
+                      >
+                        I acknowledge the validation recommendations and choose to proceed with saving
+                      </label>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex gap-4 justify-end">
+                <Button
+                  onClick={handleValidateCodes}
+                  disabled={!codesModified}
+                  variant="outline"
+                >
+                  Validate Codes
+                </Button>
+                <Button 
+                  onClick={handleSaveChanges}
+                  disabled={validationResults && !validationResults.isValid && !overrideAcknowledged}
+                >
+                  Save Changes
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
