@@ -36,6 +36,21 @@ enum AuthStatus {
   CANCELLED = "CANCELLED"
 }
 
+interface EditableAuth {
+  patientName: string;
+  patientDateOfBirth: string;
+  icdCodes: string[];
+  cptCodes: string[];
+}
+
+interface EditableFields {
+  patientName?: string;
+  patientDateOfBirth?: string;
+  status?: AuthStatus;
+  icdCodes?: string[];
+  cptCodes?: string[];
+}
+
 export default function App() {
   const [authorizations, setAuthorizations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,6 +66,8 @@ export default function App() {
   });
 
   const [statusFilter, setStatusFilter] = useState("all");
+
+  const [editingAuth, setEditingAuth] = useState<EditableAuth | null>(null);
 
   const getStatusColor = (status: AuthStatus) => {
     switch (status) {
@@ -119,41 +136,57 @@ export default function App() {
     getAuthorizations();
   }, []);
 
-  const handleStatusUpdate = async (newStatus: AuthStatus) => {
+  const handleFieldChange = (changes: EditableFields) => {
+    if (!selectedAuth || !editingAuth) return;
+    
+    // Update the editing form state
+    setEditingAuth(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        ...changes
+      };
+    });
+
+    // Update the selected auth state
+    setSelectedAuth(prev => ({
+      ...prev,
+      ...changes
+    }));
+  };
+
+  const handleSaveChanges = async () => {
     try {
-      if (!selectedAuth) return;
-      
-      const { data: authData, errors } = await dynamoDbClient.models.PriorAuthorizations.list({
-        filter: { id: { eq: selectedAuth.id } }
-      });
-      
-      console.log('Found authorization for update:', authData);
+      if (!selectedAuth || !editingAuth) return;
 
-      if (errors) {
-        console.error('Errors occurred during query:', errors);
-        throw new Error('Failed to fetch authorization data.');
-      }
-
-      const latestAuth = authData[0];
-      if (!latestAuth) {
-        throw new Error('Authorization not found');
-      }
-
+      // Update the record in DynamoDB
       const updated = await dynamoDbClient.models.PriorAuthorizations.update({
-        id: latestAuth.id,
-        status: newStatus
+        id: selectedAuth.id,
+        patientName: editingAuth.patientName,
+        patientDateOfBirth: editingAuth.patientDateOfBirth,
+        status: selectedAuth.status,
+        icdCodes: JSON.stringify(editingAuth.icdCodes),
+        cptCodes: JSON.stringify(editingAuth.cptCodes),
+        cptCodesExplanation: selectedAuth.cptCodesExplanation,
       });
 
-      console.log('Updated authorization:', updated);
+      if (!updated) {
+        throw new Error('Failed to update authorization');
+      }
 
-      setAuthorizations(authorizations.map(auth => 
-        auth.id === selectedAuth.id ? updated : auth
-      ));
+      // Update the local state with the new data
+      setAuthorizations(prev => 
+        prev.map(auth => auth.id === selectedAuth.id ? updated : auth)
+      );
       
+      // Close the dialog and reset states after successful update
       setIsUpdateDialogOpen(false);
       setSelectedAuth(null);
+      setEditingAuth(null);
+      
     } catch (error) {
-      console.error("Error updating authorization status:", error);
+      console.error("Error updating authorization:", error);
+      alert('Failed to update. Please try again.');
     }
   };
 
@@ -259,6 +292,17 @@ export default function App() {
     }
   };
 
+  const handleOpenDialog = (auth: any) => {
+    setSelectedAuth(auth);
+    setEditingAuth({
+      patientName: auth.patientName,
+      patientDateOfBirth: new Date(auth.patientDateOfBirth).toISOString().split('T')[0],
+      icdCodes: JSON.parse(auth.icdCodes || '[]'),
+      cptCodes: JSON.parse(auth.cptCodes || '[]'),
+    });
+    setIsUpdateDialogOpen(true);
+  };
+
   return (
     <main className="p-8 min-h-screen bg-background">
       <Card>
@@ -330,10 +374,7 @@ export default function App() {
                     <TableRow 
                       key={auth.id}
                       className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => {
-                        setSelectedAuth(auth);
-                        setIsUpdateDialogOpen(true);
-                      }}
+                      onClick={() => handleOpenDialog(auth)}
                     >
                       <TableCell className="font-medium">{auth.id}</TableCell>
                       <TableCell>{auth.patientName}</TableCell>
@@ -385,56 +426,72 @@ export default function App() {
       <Dialog open={isUpdateDialogOpen} onOpenChange={setIsUpdateDialogOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>Update Authorization Status</DialogTitle>
+            <DialogTitle>Update Prior Authorization</DialogTitle>
             <DialogDescription>
-              Update the status for authorization {selectedAuth?.id}
+              Update information for authorization {selectedAuth?.id}
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label>Current Status: {selectedAuth?.status}</Label>
-              <Select onValueChange={handleStatusUpdate}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select new status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={AuthStatus.COMPLETED}>Completed</SelectItem>
-                  <SelectItem value={AuthStatus.SUBMITTED}>Submitted</SelectItem>
-                  <SelectItem value={AuthStatus.PENDING}>Pending</SelectItem>
-                  <SelectItem value={AuthStatus.REJECTED}>Rejected</SelectItem>
-                  <SelectItem value={AuthStatus.CANCELLED}>Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label>CPT Codes and Explanations:</Label>
-              <div className="rounded-md border p-4 space-y-2">
-                {selectedAuth && (() => {
-                  try {
-                    const codes = JSON.parse(selectedAuth.cptCodes);
-                    return (
-                      <div className="border-b last:border-0 pb-2">
-                        <div className="font-medium">CPT Codes: {codes.join(", ")}</div>
-                        <div className="text-sm text-muted-foreground mt-2">
-                          {(() => {
-                            try {
-                              const explanation = JSON.parse(selectedAuth.cptCodesExplanation || '"No explanation available"');
-                              return explanation;
-                            } catch {
-                              return selectedAuth.cptCodesExplanation || "No explanation available";
-                            }
-                          })()}
-                        </div>
-                      </div>
-                    );
-                  } catch {
-                    return <div>No CPT codes or explanations available</div>;
-                  }
-                })()}
+          {editingAuth && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Patient Name</Label>
+                  <Input
+                    value={editingAuth.patientName}
+                    onChange={(e) => handleFieldChange({ patientName: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Date of Birth</Label>
+                  <Input
+                    type="date"
+                    value={editingAuth.patientDateOfBirth}
+                    onChange={(e) => handleFieldChange({ patientDateOfBirth: e.target.value })}
+                  />
+                </div>
               </div>
+
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select onValueChange={(value) => handleFieldChange({ status: value as AuthStatus })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select new status" defaultValue={selectedAuth?.status} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={AuthStatus.COMPLETED}>Completed</SelectItem>
+                    <SelectItem value={AuthStatus.SUBMITTED}>Submitted</SelectItem>
+                    <SelectItem value={AuthStatus.PENDING}>Pending</SelectItem>
+                    <SelectItem value={AuthStatus.REJECTED}>Rejected</SelectItem>
+                    <SelectItem value={AuthStatus.CANCELLED}>Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>ICD Codes (comma-separated)</Label>
+                <Input
+                  value={editingAuth.icdCodes.join(', ')}
+                  onChange={(e) => handleFieldChange({
+                    icdCodes: e.target.value.split(',').map(code => code.trim())
+                  })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>CPT Codes (comma-separated)</Label>
+                <Input
+                  value={editingAuth.cptCodes.join(', ')}
+                  onChange={(e) => handleFieldChange({
+                    cptCodes: e.target.value.split(',').map(code => code.trim())
+                  })}
+                />
+              </div>
+
+              <Button onClick={handleSaveChanges}>
+                Save Changes
+              </Button>
             </div>
-          </div>
+          )}
         </DialogContent>
       </Dialog>
     </main>
