@@ -586,7 +586,7 @@ export default function App() {
                 />
               </div>
 
-              {/* Add validation results section */}
+              {/* Add validation results section with custom explanation input */}
               {validationResults && (
                 <div className={`p-4 rounded-lg border ${
                   validationResults.isValid 
@@ -606,22 +606,46 @@ export default function App() {
                     </div>
                   )}
                   
-                  {/* Add acknowledgment checkbox for invalid results */}
+                  {/* Add custom explanation input and acknowledgment for invalid results */}
                   {!validationResults.isValid && (
-                    <div className="mt-4 flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="override-acknowledgment"
-                        className="h-4 w-4 rounded border-gray-300"
-                        checked={overrideAcknowledged}
-                        onChange={(e) => setOverrideAcknowledged(e.target.checked)}
-                      />
-                      <label 
-                        htmlFor="override-acknowledgment" 
-                        className="text-sm font-medium text-red-700"
-                      >
-                        I acknowledge the validation recommendations and choose to proceed with saving
-                      </label>
+                    <div className="mt-4 space-y-4">
+                      <div className="space-y-2">
+                        <label 
+                          htmlFor="custom-explanation" 
+                          className="text-sm font-medium text-red-700"
+                        >
+                          Please provide explanation for overriding the validation:
+                        </label>
+                        <textarea
+                          id="custom-explanation"
+                          className="w-full px-3 py-2 border rounded-md text-sm"
+                          rows={3}
+                          value={editingAuth?.cptCodesExplanation || ''}
+                          onChange={(e) => setEditingAuth(prev => {
+                            if (!prev) return prev;
+                            return {
+                              ...prev,
+                              cptCodesExplanation: e.target.value
+                            };
+                          })}
+                          placeholder="Enter your explanation for using these CPT codes..."
+                        />
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="override-acknowledgment"
+                          className="h-4 w-4 rounded border-gray-300"
+                          checked={overrideAcknowledged}
+                          onChange={(e) => setOverrideAcknowledged(e.target.checked)}
+                        />
+                        <label 
+                          htmlFor="override-acknowledgment" 
+                          className="text-sm font-medium text-red-700"
+                        >
+                          I acknowledge the validation recommendations and choose to proceed with saving
+                        </label>
+                      </div>
                     </div>
                   )}
                 </div>
