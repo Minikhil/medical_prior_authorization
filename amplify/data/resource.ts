@@ -10,6 +10,8 @@ const schema = a.schema({
       cptCodes: a.json(), // Procedure codes
       icdCodes: a.json(), // Diagnosis codes
       cptCodesExplanation: a.string(),
+      isOverride: a.boolean(),
+      overrideExplanation: a.string(),
     })
     .authorization((allow) => [
       allow.publicApiKey(), // Allow API key-based access
