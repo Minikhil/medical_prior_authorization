@@ -158,22 +158,21 @@ export default function App() {
   const handleFieldChange = (changes: EditableFields) => {
     if (!selectedAuth || !editingAuth) return;
     
-    // Check if ICD or CPT codes are being modified
     if (changes.icdCodes || changes.cptCodes) {
       setCodesModified(true);
-      setCodesValidated(false); // Reset validation when codes change
+      setCodesValidated(false);
     }
 
-    // Update the editing form state
     setEditingAuth(prev => {
       if (!prev) return prev;
       return {
         ...prev,
-        ...changes
+        ...changes,
+        icdCodes: Array.isArray(changes.icdCodes) ? changes.icdCodes : prev.icdCodes,
+        cptCodes: Array.isArray(changes.cptCodes) ? changes.cptCodes : prev.cptCodes
       };
     });
 
-    // Update the selected auth state
     setSelectedAuth(prev => ({
       ...prev,
       ...changes
@@ -255,43 +254,28 @@ export default function App() {
     try {
       if (!selectedAuth || !editingAuth) return;
       
-      // Determine if this is an override case
       const isOverride = validationResults?.isValid === false && overrideAcknowledged;
 
-      // Prepare update object using EditableFields interface
-      const updateData: EditableFields & { id: string } = {
+      const { data: updated, errors } = await dynamoDbClient.models.PriorAuthorizations.update({
         id: selectedAuth.id,
         patientName: editingAuth.patientName,
         patientDateOfBirth: editingAuth.patientDateOfBirth,
         status: selectedAuth.status,
         icdCodes: JSON.stringify(editingAuth.icdCodes),
         cptCodes: JSON.stringify(editingAuth.cptCodes),
+        cptCodesExplanation: validationResults?.isValid ? editingAuth.cptCodesExplanation : selectedAuth.cptCodesExplanation,
+        overrideExplanation: isOverride ? editingAuth.cptCodesExplanation : "",
         isOverride: isOverride,
-      };
+      });
 
-      // Only update cptCodesExplanation if validation was successful
-      if (validationResults?.isValid) {
-        updateData.cptCodesExplanation = editingAuth.cptCodesExplanation;
-      }
-
-      // Add override explanation if this is an override case
-      if (isOverride) {
-        updateData.overrideExplanation = editingAuth.cptCodesExplanation;
-      }
-
-      // Update the record in DynamoDB
-      const updated = await dynamoDbClient.models.PriorAuthorizations.update(updateData);
-
-      if (!updated) {
+      if (errors) {
         throw new Error('Failed to update authorization');
       }
 
-      // Update the local state with the new data
+      // Update local state and close dialog
       setAuthorizations(prev => 
         prev.map(auth => auth.id === selectedAuth.id ? updated : auth)
       );
-      
-      // Close the dialog and reset states after successful update
       setIsUpdateDialogOpen(false);
       setSelectedAuth(null);
       setEditingAuth(null);
