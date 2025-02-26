@@ -6,10 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import "./../app/app.css";
 
 export default function Home() {
   const router = useRouter();
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [credentials, setCredentials] = useState({
     customerId: "",
     password: "",
@@ -22,33 +24,65 @@ export default function Home() {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // For now, just redirect to the customer page
-    // In a real application, you would validate credentials here
     router.push(`/customer/${credentials.customerId}`);
+    setIsLoginOpen(false);
   };
 
   return (
-    <main className="min-h-screen bg-[#111111] flex flex-col items-center justify-center p-4">
-      <div className="text-center mb-16 space-y-4">
-        <h1 className="text-6xl font-bold text-white tracking-tight">
-          GANDER
-        </h1>
-        <p className="text-gray-400 text-lg max-w-2xl">
-          Experience the Automation System for Global Aviation, 
-          streamlining operations across multiple devices on a shared platform.
+    <main className="min-h-screen bg-white flex flex-col items-center p-4">
+      {/* Navigation */}
+      <nav className="w-full max-w-7xl flex justify-between items-center py-4 px-6">
+        <h1 className="text-2xl font-semibold text-black">Tivara</h1>
+        <div className="flex gap-4">
+          <a href="#features" className="text-gray-600">Features</a>
+          <a href="#team" className="text-gray-600">Team</a>
+          <Button 
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+            onClick={() => setIsLoginOpen(true)}
+          >
+            Login
+          </Button>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <div className="text-center mt-32 mb-8 space-y-4 max-w-4xl">
+        <h2 className="text-5xl font-semibold text-black leading-tight">
+          We automate prior authorizations,<br />
+          so you can deliver care faster
+        </h2>
+        <p className="text-gray-600 text-lg mt-4">
+          Care-critical prior authorizations approved 30x faster and at 80%<br />
+          lower cost, seamlessly integrated into your practice's workflow.
         </p>
+        <Button 
+          className="mt-8 bg-blue-600 hover:bg-blue-700 text-white px-8 py-6 text-lg"
+          onClick={() => setIsLoginOpen(true)}
+        >
+          Login
+        </Button>
       </div>
 
-      <Card className="w-full max-w-md border border-gray-800 bg-[#1A1A1A] shadow-2xl">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center text-white">
-            Customer Login
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Dashboard Preview */}
+      <div className="w-full max-w-6xl mt-16 px-4">
+        <div className="bg-white rounded-lg shadow-xl">
+          <img 
+            src="/dashboard.png" 
+            alt="Tivara Dashboard Preview" 
+            className="w-full rounded-lg"
+          />
+        </div>
+      </div>
+
+      {/* Login Dialog */}
+      <Dialog open={isLoginOpen} onOpenChange={setIsLoginOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center">Login to Tivara</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="customerId" className="text-gray-300">Customer ID</Label>
+              <Label htmlFor="customerId">Customer ID</Label>
               <Input
                 id="customerId"
                 name="customerId"
@@ -56,11 +90,11 @@ export default function Home() {
                 value={credentials.customerId}
                 onChange={handleInputChange}
                 required
-                className="bg-[#222222] border-gray-800 text-white placeholder:text-gray-600 h-12"
+                className="border-gray-200"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-gray-300">Password</Label>
+              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 name="password"
@@ -69,41 +103,18 @@ export default function Home() {
                 value={credentials.password}
                 onChange={handleInputChange}
                 required
-                className="bg-[#222222] border-gray-800 text-white placeholder:text-gray-600 h-12"
+                className="border-gray-200"
               />
             </div>
             <Button 
               type="submit" 
-              className="w-full h-12 bg-[#00C853] hover:bg-[#00A847] text-white font-semibold text-lg transition-colors"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
             >
               Login
             </Button>
           </form>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mt-16 max-w-4xl text-center">
-        <div className="space-y-2">
-          <div className="text-[#00C853] text-2xl mb-2">⚡</div>
-          <h3 className="text-white font-semibold">AI Powered</h3>
-          <p className="text-gray-400 text-sm">Enhanced operations with intelligent automation</p>
-        </div>
-        <div className="space-y-2">
-          <div className="text-[#00C853] text-2xl mb-2">👥</div>
-          <h3 className="text-white font-semibold">Multi-user</h3>
-          <p className="text-gray-400 text-sm">Collaborate across different departments</p>
-        </div>
-        <div className="space-y-2">
-          <div className="text-[#00C853] text-2xl mb-2">🎯</div>
-          <h3 className="text-white font-semibold">Easy to Use</h3>
-          <p className="text-gray-400 text-sm">Simple interface with intuitive controls</p>
-        </div>
-        <div className="space-y-2">
-          <div className="text-[#00C853] text-2xl mb-2">🔄</div>
-          <h3 className="text-white font-semibold">Real-time Sync</h3>
-          <p className="text-gray-400 text-sm">Instant updates across all devices</p>
-        </div>
-      </div>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
