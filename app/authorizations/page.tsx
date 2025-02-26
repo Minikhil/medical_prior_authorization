@@ -82,6 +82,8 @@ export default function App() {
 
   const [overrideAcknowledged, setOverrideAcknowledged] = useState(false);
 
+  const [isValidating, setIsValidating] = useState(false);
+
   const getStatusColor = (status: AuthStatus) => {
     switch (status) {
       case AuthStatus.COMPLETED:
@@ -178,7 +180,7 @@ export default function App() {
     try {
       if (!editingAuth) return;
 
-      // Reset validation results when starting new validation
+      setIsValidating(true);
       setValidationResults(null);
 
       // Send the ICD codes to Ragie API to get back related text chunks from medical guidelines
@@ -219,10 +221,18 @@ export default function App() {
 
       const validationResult = await response.json();
       
-      // Update validation results state instead of showing alert
+      // Update validation results state
       setValidationResults(validationResult);
       if (validationResult.isValid) {
         setCodesValidated(true);
+        // Update editingAuth with the validation explanation
+        setEditingAuth(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            cptCodesExplanation: validationResult.explanation
+          };
+        });
       }
 
     } catch (error) {
@@ -232,6 +242,8 @@ export default function App() {
         explanation: 'Failed to validate codes. Please try again.',
         confidence: 'low'
       });
+    } finally {
+      setIsValidating(false);
     }
   };
 
@@ -248,7 +260,7 @@ export default function App() {
         status: selectedAuth.status,
         icdCodes: JSON.stringify(editingAuth.icdCodes),
         cptCodes: JSON.stringify(editingAuth.cptCodes),
-        cptCodesExplanation: selectedAuth.cptCodesExplanation,
+        cptCodesExplanation: editingAuth.cptCodesExplanation,
       });
 
       if (!updated) {
@@ -581,13 +593,10 @@ export default function App() {
                     ? 'bg-green-50 border-green-200 text-green-700' 
                     : 'bg-red-50 border-red-200 text-red-700'
                 }`}>
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="mb-2">
                     <h4 className="font-semibold">
                       Validation Results ({validationResults.confidence} confidence)
                     </h4>
-                    <Badge variant="destructive">
-                      {validationResults.isValid ? 'Valid' : 'Invalid'}
-                    </Badge>
                   </div>
                   <p className="text-sm mb-2">{validationResults.explanation}</p>
                   {validationResults.suggestedChanges && (
@@ -621,14 +630,21 @@ export default function App() {
               <div className="flex gap-4 justify-end">
                 <Button
                   onClick={handleValidateCodes}
-                  disabled={!codesModified}
+                  disabled={!codesModified || isValidating}
                   variant="outline"
                 >
-                  Validate Codes
+                  {isValidating ? (
+                    <>
+                      <span className="animate-spin mr-2">⭮</span>
+                      Validating...
+                    </>
+                  ) : (
+                    'Validate Codes'
+                  )}
                 </Button>
                 <Button 
                   onClick={handleSaveChanges}
-                  disabled={validationResults && !validationResults.isValid && !overrideAcknowledged}
+                  disabled={validationResults?.isValid === false && !overrideAcknowledged}
                 >
                   Save Changes
                 </Button>
