@@ -25,11 +25,11 @@ This application streamlines the prior authorization process by providing a cent
 - AWS Lambda
 
 ## Getting Started
-1. Visit URL: https://development-v4.d3v68ywpyu0w2i.amplifyapp.com
+1. Visit URL: https://main.d3v68ywpyu0w2i.amplifyapp.com/
 2. Login with credentials:
     - Username: any string value
     - Password: any string value 
-    - Should redirect to authorizations page: https://development-v4.d3v68ywpyu0w2i.amplifyapp.com/authorizations
+    - Should redirect to authorizations page: https://main.d3v68ywpyu0w2i.amplifyapp.com/authorizations
 
 3. Use dummy visit notes in medical_prior_authorization/test folder to uplaod by clicking on the upload button in top right corner
 

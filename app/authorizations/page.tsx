@@ -87,6 +87,8 @@ export default function App() {
 
   const [isValidating, setIsValidating] = useState(false);
 
+  const [isProcessingUpload, setIsProcessingUpload] = useState(false);
+
   const getStatusColor = (status: AuthStatus) => {
     switch (status) {
       case AuthStatus.COMPLETED:
@@ -293,6 +295,7 @@ export default function App() {
 
     try {
       setPdfLoading(true);
+      setIsProcessingUpload(true);
       
       const formData = new FormData();
       formData.append('file', file);
@@ -386,6 +389,7 @@ export default function App() {
       // You might want to show an error message to the user
     } finally {
       setPdfLoading(false);
+      setIsProcessingUpload(false);
     }
   };
 
@@ -417,18 +421,33 @@ export default function App() {
               onChange={handlePdfUpload}
               className="hidden"
               id="pdf-upload"
+              disabled={isProcessingUpload}
             />
             <label htmlFor="pdf-upload">
-              <Button variant="outline" size="sm" asChild>
+              <Button variant="outline" size="sm" asChild disabled={isProcessingUpload}>
                 <div className="cursor-pointer">
                   <Upload className="h-4 w-4 mr-2" />
-                  <span>{pdfLoading ? 'Processing...' : 'Upload PDF'}</span>
+                  <span>
+                    {isProcessingUpload ? (
+                      <>
+                        <span className="animate-spin mr-2">⭮</span>
+                        Processing...
+                      </>
+                    ) : (
+                      'Upload PDF'
+                    )}
+                  </span>
                 </div>
               </Button>
             </label>
           </div>
         </CardHeader>
         <CardContent>
+          {isProcessingUpload && (
+            <div className="mb-4 p-4 bg-blue-50 text-blue-700 rounded-lg">
+              Processing PDF and creating authorization... Please wait.
+            </div>
+          )}
           <div className="flex items-center justify-between space-x-2 pb-4">
             <div className="flex flex-1 items-center space-x-2">
               <Select 
