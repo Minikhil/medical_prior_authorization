@@ -519,7 +519,11 @@ export default function App() {
                         })()}
                       </TableCell>
                       <TableCell>
-                        {auth.isOverride ? "Yes" : "No"}
+                        {auth.isOverride ? (
+                          <Badge variant="secondary" className="bg-red-100 text-red-800">
+                            Yes
+                          </Badge>
+                        ) : "No"}
                       </TableCell>
                       <TableCell>
                         {auth.overrideExplanation || "N/A"}
