@@ -50,6 +50,9 @@ interface EditableFields {
   status?: AuthStatus;
   icdCodes?: string[];
   cptCodes?: string[];
+  cptCodesExplanation?: string;
+  overrideExplanation?: string;
+  isOverride?: boolean;
 }
 
 export default function App() {
@@ -147,6 +150,7 @@ export default function App() {
     }
   }
 
+  // Fetch authorizations when page loads
   useEffect(() => {
     getAuthorizations();
   }, []);
@@ -251,17 +255,32 @@ export default function App() {
     try {
       if (!selectedAuth || !editingAuth) return;
       
+      // Determine if this is an override case
+      const isOverride = validationResults?.isValid === false && overrideAcknowledged;
 
-      // Update the record in DynamoDB
-      const updated = await dynamoDbClient.models.PriorAuthorizations.update({
+      // Prepare update object using EditableFields interface
+      const updateData: EditableFields & { id: string } = {
         id: selectedAuth.id,
         patientName: editingAuth.patientName,
         patientDateOfBirth: editingAuth.patientDateOfBirth,
         status: selectedAuth.status,
         icdCodes: JSON.stringify(editingAuth.icdCodes),
         cptCodes: JSON.stringify(editingAuth.cptCodes),
-        cptCodesExplanation: editingAuth.cptCodesExplanation,
-      });
+        isOverride: isOverride,
+      };
+
+      // Only update cptCodesExplanation if validation was successful
+      if (validationResults?.isValid) {
+        updateData.cptCodesExplanation = editingAuth.cptCodesExplanation;
+      }
+
+      // Add override explanation if this is an override case
+      if (isOverride) {
+        updateData.overrideExplanation = editingAuth.cptCodesExplanation;
+      }
+
+      // Update the record in DynamoDB
+      const updated = await dynamoDbClient.models.PriorAuthorizations.update(updateData);
 
       if (!updated) {
         throw new Error('Failed to update authorization');
@@ -369,6 +388,7 @@ export default function App() {
         icdCodes: JSON.stringify(dataOpenai.icd_codes || []),
         cptCodes: JSON.stringify(dataOpenaiV2.cptCode || []),
         cptCodesExplanation: JSON.stringify(dataOpenaiV2.cptCodesExplanation || []),
+        medicalPlan: dataOpenai.medical_plan,
       });
 
       if (errors) {
@@ -465,6 +485,8 @@ export default function App() {
                     <TableHead>ICD Codes</TableHead>
                     <TableHead>CPT Codes</TableHead>
                     <TableHead>CPT Explanations</TableHead>
+                    <TableHead>Override</TableHead>
+                    <TableHead>Override Explanation</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -511,6 +533,12 @@ export default function App() {
                             return auth.cptCodesExplanation || "N/A";
                           }
                         })()}
+                      </TableCell>
+                      <TableCell>
+                        {auth.isOverride ? "Yes" : "No"}
+                      </TableCell>
+                      <TableCell>
+                        {auth.overrideExplanation || "N/A"}
                       </TableCell>
                     </TableRow>
                   ))}
