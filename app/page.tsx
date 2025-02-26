@@ -24,7 +24,7 @@ export default function Home() {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    router.push(`/customer/${credentials.customerId}`);
+    router.push('/authorizations');
     setIsLoginOpen(false);
   };
 
