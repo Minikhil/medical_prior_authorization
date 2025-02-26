@@ -12,6 +12,7 @@ const schema = a.schema({
       cptCodesExplanation: a.string(),
       isOverride: a.boolean(),
       overrideExplanation: a.string(),
+      medicalPlan: a.string(),
     })
     .authorization((allow) => [
       allow.publicApiKey(), // Allow API key-based access
