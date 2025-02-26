@@ -29,13 +29,14 @@ This application streamlines the prior authorization process by providing a cent
 2. Login with credentials:
     - Username: any string value
     - Password: any string value 
+    - Should redirect to authorizations page: https://development-v4.d3v68ywpyu0w2i.amplifyapp.com/authorizations
 
-3. Use dummy visit notes in test folder to uplaod
+3. Use dummy visit notes in medical_prior_authorization/test folder to uplaod by clicking on the upload button in top right corner
 
 ## Features
 
 - Create new authorization request
-- View all authorization requests
 - Edit authorization requests
-- Cancel authorization requests
-
+- Validate authorization requests edits prior to saving
+- Submit authorization requests for review
+- View authorization requests in list and detail view
