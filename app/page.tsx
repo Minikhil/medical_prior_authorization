@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -32,7 +31,7 @@ export default function Home() {
     <main className="min-h-screen bg-white flex flex-col items-center p-4">
       {/* Navigation */}
       <nav className="w-full max-w-7xl flex justify-between items-center py-4 px-6">
-        <h1 className="text-2xl font-semibold text-black">Tivara</h1>
+        <h1 className="text-2xl font-semibold text-black">Medspire</h1>
         <div className="flex gap-4">
           <a href="#features" className="text-gray-600">Features</a>
           <a href="#team" className="text-gray-600">Team</a>
@@ -78,7 +77,7 @@ export default function Home() {
       <Dialog open={isLoginOpen} onOpenChange={setIsLoginOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-center">Login to Tivara</DialogTitle>
+            <DialogTitle className="text-center">Login to Medspire</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">

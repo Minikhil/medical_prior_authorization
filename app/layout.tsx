@@ -5,8 +5,8 @@ import "./app.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Gander",
-  description: "Experience the Automation System for Global Aviation, streamlining operations across multiple devices on a shared platform.",
+  title: "Medspire",
+  description: "Medspire is a platform for managing medical prior authorizations."
 };
 
 export default function RootLayout({
