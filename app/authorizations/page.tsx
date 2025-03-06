@@ -60,14 +60,6 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [selectedAuth, setSelectedAuth] = useState<any>(null);
   const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
-  const [pdfLoading, setPdfLoading] = useState(false);
-
-  const [newAuth, setNewAuth] = useState({
-    patientName: "",
-    patientDateOfBirth: "",
-    cptCodes: [],
-    icdCodes: [],
-  });
 
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -104,29 +96,6 @@ export default function App() {
       default:
         return "bg-gray-100 text-gray-800"
     }
-  }
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setNewAuth((prev) => ({ ...prev, [name]: value }))
-  }
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const newAuthId = `AUTH-${String(authorizations.length + 1).padStart(3, "0")}`
-    const createdAuth = {
-      ...newAuth,
-      id: newAuthId,
-      status: "Processing",
-      createdAt: new Date().toISOString(),
-    }
-    setAuthorizations((prev) => [createdAuth, ...prev])
-    setNewAuth({
-      patientName: "",
-      patientDateOfBirth: "",
-      cptCodes: [],
-      icdCodes: [],
-    })
   }
 
   const filteredAuthorizations = authorizations.filter((auth) => {
@@ -294,7 +263,6 @@ export default function App() {
     console.log("Selected file:", file.name);
 
     try {
-      setPdfLoading(true);
       setIsProcessingUpload(true);
       
       const formData = new FormData();
@@ -388,11 +356,11 @@ export default function App() {
       console.error('Error processing PDF:', error);
       // You might want to show an error message to the user
     } finally {
-      setPdfLoading(false);
       setIsProcessingUpload(false);
     }
   };
 
+  // Open the update dialog for the selected authorization
   const handleOpenDialog = (auth: any) => {
     setSelectedAuth(auth);
     setEditingAuth({
