@@ -23,37 +23,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { Auth, EditableAuth, AuthStatus } from "@/app/types";
 
 Amplify.configure(outputs);
 
 const dynamoDbClient = generateClient<Schema>();
-
-enum AuthStatus {
-  PENDING = "PENDING",
-  COMPLETED = "COMPLETED",
-  SUBMITTED = "SUBMITTED",
-  REJECTED = "REJECTED",
-  CANCELLED = "CANCELLED"
-}
-
-interface EditableAuth {
-  patientName: string;
-  patientDateOfBirth: string;
-  icdCodes: string[];
-  cptCodes: string[];
-  cptCodesExplanation: string;
-}
-
-interface EditableFields {
-  patientName?: string;
-  patientDateOfBirth?: string;
-  status?: AuthStatus;
-  icdCodes?: string[];
-  cptCodes?: string[];
-  cptCodesExplanation?: string;
-  overrideExplanation?: string;
-  isOverride?: boolean;
-}
 
 export default function App() {
   const [authorizations, setAuthorizations] = useState<any[]>([]);
@@ -126,7 +100,7 @@ export default function App() {
     getAuthorizations();
   }, []);
 
-  const handleFieldChange = (changes: EditableFields) => {
+  const handleAuthUpdate = (changes: Auth) => {
     if (!selectedAuth || !editingAuth) return;
     
     if (changes.icdCodes || changes.cptCodes) {
@@ -540,7 +514,7 @@ export default function App() {
                   <Label>Patient Name</Label>
                   <Input
                     value={editingAuth.patientName}
-                    onChange={(e) => handleFieldChange({ patientName: e.target.value })}
+                    onChange={(e) => handleAuthUpdate({ patientName: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
@@ -548,14 +522,14 @@ export default function App() {
                   <Input
                     type="date"
                     value={editingAuth.patientDateOfBirth}
-                    onChange={(e) => handleFieldChange({ patientDateOfBirth: e.target.value })}
+                    onChange={(e) => handleAuthUpdate({ patientDateOfBirth: e.target.value })}
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label>Status</Label>
-                <Select onValueChange={(value) => handleFieldChange({ status: value as AuthStatus })}>
+                <Select onValueChange={(value) => handleAuthUpdate({ status: value as AuthStatus })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select new status" defaultValue={selectedAuth?.status} />
                   </SelectTrigger>
@@ -573,7 +547,7 @@ export default function App() {
                 <Label>ICD Codes (comma-separated)</Label>
                 <Input
                   value={editingAuth.icdCodes.join(', ')}
-                  onChange={(e) => handleFieldChange({
+                  onChange={(e) => handleAuthUpdate({
                     icdCodes: e.target.value.split(',').map(code => code.trim())
                   })}
                 />
@@ -583,7 +557,7 @@ export default function App() {
                 <Label>CPT Codes (comma-separated)</Label>
                 <Input
                   value={editingAuth.cptCodes.join(', ')}
-                  onChange={(e) => handleFieldChange({
+                  onChange={(e) => handleAuthUpdate({
                     cptCodes: e.target.value.split(',').map(code => code.trim())
                   })}
                 />
