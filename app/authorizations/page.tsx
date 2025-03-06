@@ -40,7 +40,6 @@ export default function App() {
   const [editingAuth, setEditingAuth] = useState<EditableAuth | null>(null);
 
   const [codesModified, setCodesModified] = useState(false);
-  const [codesValidated, setCodesValidated] = useState(false);
 
   const [validationResults, setValidationResults] = useState<{
     isValid: boolean;
@@ -105,7 +104,6 @@ export default function App() {
     
     if (changes.icdCodes || changes.cptCodes) {
       setCodesModified(true);
-      setCodesValidated(false);
     }
 
     setEditingAuth(prev => {
@@ -172,7 +170,6 @@ export default function App() {
       // Update validation results state
       setValidationResults(validationResult);
       if (validationResult.isValid) {
-        setCodesValidated(true);
         // Update editingAuth with the validation explanation
         setEditingAuth(prev => {
           if (!prev) return prev;
@@ -345,7 +342,6 @@ export default function App() {
       cptCodesExplanation: auth.cptCodesExplanation || 'N/A',
     });
     setCodesModified(false);
-    setCodesValidated(false);
     setValidationResults(null);
     setOverrideAcknowledged(false);
     setIsUpdateDialogOpen(true);
